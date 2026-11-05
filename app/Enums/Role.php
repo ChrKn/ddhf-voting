@@ -2,7 +2,10 @@
 
 namespace App\Enums;
 
-enum Role: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+
+enum Role: string implements HasColor, HasLabel
 {
     case SystemAdmin = 'system_admin';
     case Manager = 'manager';
@@ -14,6 +17,20 @@ enum Role: string
             self::SystemAdmin => 'Systemadmin',
             self::Manager => 'Verwalter:in',
             self::Member => 'Vereinsvertreter:in',
+        };
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::SystemAdmin => 'danger',
+            self::Manager => 'warning',
+            self::Member => 'gray',
         };
     }
 }

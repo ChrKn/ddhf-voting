@@ -2,7 +2,10 @@
 
 namespace App\Enums;
 
-enum PollStatus: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+
+enum PollStatus: string implements HasColor, HasLabel
 {
     case Draft = 'draft';
     case Open = 'open';
@@ -16,6 +19,21 @@ enum PollStatus: string
             self::Open => 'Offen',
             self::Closed => 'Geschlossen',
             self::Published => 'Veröffentlicht',
+        };
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::Draft => 'gray',
+            self::Open => 'success',
+            self::Closed => 'warning',
+            self::Published => 'info',
         };
     }
 }

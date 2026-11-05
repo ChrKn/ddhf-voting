@@ -2,7 +2,9 @@
 
 namespace App\Enums;
 
-enum PollMode: string
+use Filament\Support\Contracts\HasLabel;
+
+enum PollMode: string implements HasLabel
 {
     case Secret = 'secret';
     case Public = 'public';
@@ -13,5 +15,10 @@ enum PollMode: string
             self::Secret => 'Geheim',
             self::Public => 'Öffentlich',
         };
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
     }
 }

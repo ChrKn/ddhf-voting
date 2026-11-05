@@ -4,11 +4,14 @@ namespace App\Models;
 
 use App\Services\VoteWeightCalculator;
 use Database\Factories\ClubFactory;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * @property-read int $votes aktuelle Stimmen laut Mitgliederzahl
@@ -23,6 +26,23 @@ class Club extends Model
         'member_count' => 0,
         'active' => true,
     ];
+
+    /**
+     * Zweite Verteidigungslinie neben Policy und Formular: Ist jemand angemeldet,
+     * darf die Mitgliederzahl nur ändern, wer die Berechtigung dazu hat.
+     * (Konsole, Seeder und Jobs ohne Login sind nicht betroffen.)
+     */
+    protected static function booted(): void
+    {
+        static::saving(function (Club $club): void {
+            $user = Auth::user();
+
+            if ($user !== null && $club->isDirty('member_count')
+                && Gate::forUser($user)->denies('updateMemberCount', $club)) {
+                throw new AuthorizationException('Nur der Systemadmin darf die Mitgliederzahl ändern.');
+            }
+        });
+    }
 
     /**
      * @return array<string, string>

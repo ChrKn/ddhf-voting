@@ -7,10 +7,11 @@ use App\Enums\PollStatus;
 use App\Enums\PollType;
 use App\Models\Assembly;
 use App\Models\Poll;
+use App\Services\PollStructure;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * Standard: Antrag mit Ja / Nein / Enthaltung.
+ * Standard: Antrag mit Dafür / Dagegen / Enthaltung.
  *
  * @extends Factory<Poll>
  */
@@ -31,16 +32,7 @@ class PollFactory extends Factory
 
     public function configure(): static
     {
-        return $this->afterCreating(function (Poll $poll) {
-            if ($poll->type === PollType::Motion && ! $poll->positions()->exists()) {
-                $position = $poll->positions()->create(['title' => $poll->title]);
-                $position->options()->createMany([
-                    ['label' => 'Dafür', 'sort' => 1],
-                    ['label' => 'Dagegen', 'sort' => 2],
-                    ['label' => 'Enthaltung', 'is_abstention' => true, 'sort' => 3],
-                ]);
-            }
-        });
+        return $this->afterCreating(fn (Poll $poll) => app(PollStructure::class)->sync($poll));
     }
 
     public function public(): static
@@ -54,7 +46,7 @@ class PollFactory extends Factory
     }
 
     /**
-     * Wahl mit Ämtern und Kandidat:innen.
+     * Wahl mit Ämtern und Kandidat:innen (Enthaltung ergänzt PollStructure).
      *
      * @param  array<string, list<string>>  $positions  Amt => Kandidat:innen
      */
@@ -70,8 +62,10 @@ class PollFactory extends Factory
                 foreach ($candidates as $i => $candidate) {
                     $position->options()->create(['label' => $candidate, 'sort' => $i + 1]);
                 }
-                $position->options()->create(['label' => 'Enthaltung', 'is_abstention' => true, 'sort' => 999]);
             }
+
+            // configure() läuft vor diesem Callback; Enthaltungen jetzt ergänzen
+            app(PollStructure::class)->sync($poll);
         });
     }
 }

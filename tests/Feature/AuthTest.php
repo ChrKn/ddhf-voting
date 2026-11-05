@@ -39,6 +39,7 @@ it('lehnt falsche Passwörter ab', function () {
 });
 
 it('bremst nach fünf Fehlversuchen', function () {
+    $this->freezeTime();
     $user = User::factory()->create();
 
     foreach (range(1, 5) as $_) {

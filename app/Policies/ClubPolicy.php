@@ -32,7 +32,7 @@ class ClubPolicy
         return $user->isSystemAdmin();
     }
 
-    public function updateMemberCount(User $user, Club $club): bool
+    public function updateMemberCount(User $user, ?Club $club = null): bool
     {
         return $user->isSystemAdmin();
     }

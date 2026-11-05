@@ -2,9 +2,11 @@
 
 namespace App\Enums;
 
-enum PollType: string
+use Filament\Support\Contracts\HasLabel;
+
+enum PollType: string implements HasLabel
 {
-    /** Antrag: Ja / Nein / Enthaltung */
+    /** Antrag: Dafür / Dagegen / Enthaltung */
     case Motion = 'motion';
 
     /** Wahl: ein oder mehrere Ämter mit Kandidat:innen */
@@ -16,5 +18,10 @@ enum PollType: string
             self::Motion => 'Antrag',
             self::Election => 'Wahl',
         };
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
     }
 }
