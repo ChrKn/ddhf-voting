@@ -30,11 +30,12 @@ class Club extends Model
     /**
      * Zweite Verteidigungslinie neben Policy und Formular: Ist jemand angemeldet,
      * darf die Mitgliederzahl nur ändern, wer die Berechtigung dazu hat.
-     * (Konsole, Seeder und Jobs ohne Login sind nicht betroffen.)
+     * (Konsole, Seeder und Jobs ohne Login sind nicht betroffen; das Anlegen
+     * regelt die create-Policy.)
      */
     protected static function booted(): void
     {
-        static::saving(function (Club $club): void {
+        static::updating(function (Club $club): void {
             $user = Auth::user();
 
             if ($user !== null && $club->isDirty('member_count')
