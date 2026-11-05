@@ -64,6 +64,11 @@ class ConductAssembly extends Page
         $assembly = $this->assembly();
 
         return [
+            Action::make('screen')
+                ->label('Beamer-Ansicht')
+                ->icon(Heroicon::OutlinedTv)
+                ->color('gray')
+                ->url(fn () => route('screen', $assembly->public_token), shouldOpenInNewTab: true),
             Action::make('openAssembly')
                 ->label('Versammlung eröffnen')
                 ->icon(Heroicon::OutlinedPlay)
