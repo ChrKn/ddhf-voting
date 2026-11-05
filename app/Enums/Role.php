@@ -16,7 +16,7 @@ enum Role: string implements HasColor, HasLabel
         return match ($this) {
             self::SystemAdmin => 'Systemadmin',
             self::Manager => 'Verwalter:in',
-            self::Member => 'Vereinsvertreter:in',
+            self::Member => 'Vertreter:in',
         };
     }
 

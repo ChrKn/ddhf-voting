@@ -68,7 +68,7 @@ it('führt durch Auswahl, Bestätigung und Abgabe', function () {
     expect(PollParticipation::count())->toBe(0);
 
     $component->call('submit')
-        ->assertSee('Dein Verein hat abgestimmt.')
+        ->assertSee('Fechtschule Nord hat abgestimmt.')
         ->assertDontSee('Verbindlich abstimmen');
 
     expect(PollParticipation::first()->votes)->toBe(3)

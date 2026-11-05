@@ -7,10 +7,10 @@
                 <x-slot name="heading">Status</x-slot>
                 <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                     <div>Versammlung: <x-filament::badge :color="$assembly->status->getColor()" class="inline-flex">{{ $assembly->status->getLabel() }}</x-filament::badge></div>
-                    <div>Eingecheckt: <strong>{{ $checkedInCount }}</strong> Vereine mit <strong>{{ $totalVotes }}</strong> Stimmen</div>
+                    <div>Eingecheckt: <strong>{{ $checkedInCount }}</strong> Mitglieder mit <strong>{{ $totalVotes }}</strong> Stimmen</div>
                 </div>
                 @if ($assembly->status === \App\Enums\AssemblyStatus::Draft)
-                    <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">Vereine können schon eingecheckt werden. Abstimmungen lassen sich erst öffnen, wenn die Versammlung eröffnet ist.</p>
+                    <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">Mitglieder können schon eingecheckt werden. Abstimmungen lassen sich erst öffnen, wenn die Versammlung eröffnet ist.</p>
                 @endif
                 @if ($openPollCount > 1)
                     <p class="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">
@@ -76,7 +76,7 @@
                         @endphp
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="rounded-lg border border-gray-200 p-4 dark:border-white/10">
-                                <div class="text-xs uppercase tracking-wide text-gray-500">Vereine</div>
+                                <div class="text-xs uppercase tracking-wide text-gray-500">Mitglieder</div>
                                 <div class="mt-1 text-2xl font-semibold tabular-nums">{{ $progress['clubs_voted'] }} / {{ $progress['clubs_present'] }}</div>
                                 <div class="mt-2 h-2 overflow-hidden rounded bg-gray-100 dark:bg-white/10">
                                     <div class="h-full bg-primary-600" style="width: {{ $clubShare }}%"></div>
@@ -99,7 +99,7 @@
                                 </div>
                             </div>
                         @elseif ($progress['clubs_present'] > 0)
-                            <p class="mt-4 text-sm font-semibold text-success-600">Alle eingecheckten Vereine haben abgestimmt.</p>
+                            <p class="mt-4 text-sm font-semibold text-success-600">Alle eingecheckten Mitglieder haben abgestimmt.</p>
                         @endif
                     @else
                         <p class="text-sm text-gray-600 dark:text-gray-400">Noch nicht geöffnet.</p>
@@ -123,7 +123,7 @@
                                 <table class="w-full text-left text-sm">
                                     <thead>
                                         <tr class="border-b border-gray-200 dark:border-white/10">
-                                            <th class="py-2 pr-4">Verein</th>
+                                            <th class="py-2 pr-4">Mitglied</th>
                                             <th class="py-2 pr-4">Stimmen</th>
                                             <th class="py-2">Abgestimmt mit</th>
                                         </tr>
@@ -156,7 +156,7 @@
                 <x-slot name="description">Die Stimmen werden beim Check-in eingefroren.</x-slot>
 
                 <x-filament::input.wrapper class="mb-3">
-                    <x-filament::input type="search" wire:model.live.debounce.300ms="clubSearch" placeholder="Verein suchen…" />
+                    <x-filament::input type="search" wire:model.live.debounce.300ms="clubSearch" placeholder="Mitglied suchen…" />
                 </x-filament::input.wrapper>
 
                 <ul class="divide-y divide-gray-200 dark:divide-white/10">
@@ -183,7 +183,7 @@
                             @endif
                         </li>
                     @empty
-                        <li class="py-2 text-sm text-gray-500">Keine Vereine gefunden.</li>
+                        <li class="py-2 text-sm text-gray-500">Keine Mitglieder gefunden.</li>
                     @endforelse
                 </ul>
             </x-filament::section>

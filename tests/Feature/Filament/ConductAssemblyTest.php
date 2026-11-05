@@ -39,7 +39,7 @@ it('steuert eine komplette Versammlung', function () {
         ->callAction('openAssembly')
         ->call('checkIn', $this->nord->id)
         ->call('checkIn', $this->sued->id)
-        ->assertSeeText('Eingecheckt: 2 Vereine mit 4 Stimmen');
+        ->assertSeeText('Eingecheckt: 2 Mitglieder mit 4 Stimmen');
 
     expect($this->assembly->fresh()->status)->toBe(AssemblyStatus::Open);
 

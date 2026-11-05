@@ -1,8 +1,8 @@
 <div wire:poll.{{ config('voting.poll_interval') }}.keep-alive class="space-y-5">
-    {{-- Vereinsauswahl bei mehreren Vereinen --}}
+    {{-- Auswahl, wenn eine Person mehrere Mitglieder vertritt --}}
     @if ($clubs->isEmpty())
         <div class="card text-center">
-            <p>Deinem Konto ist noch kein Verein zugeordnet. Bitte wende dich an die Versammlungsleitung.</p>
+            <p>Deinem Konto ist noch kein Mitglied zugeordnet. Bitte wende dich an die Versammlungsleitung.</p>
         </div>
     @elseif ($clubs->count() > 1)
         <div class="card">
@@ -26,13 +26,13 @@
                 <p class="mt-2">Aktuell läuft keine Versammlung.</p>
             @elseif ($this->votes === null)
                 <p class="mt-2">
-                    Zur <strong>{{ $this->assembly->title }}</strong> ist dein Verein noch nicht eingecheckt.
+                    Zur <strong>{{ $this->assembly->title }}</strong> ist {{ $this->club->name }} noch nicht eingecheckt.
                     Bitte melde dich bei der Versammlungsleitung.
                 </p>
             @else
                 <p class="mt-2 text-neutral-600">
                     {{ $this->assembly->title }} ·
-                    Dein Verein hat <strong class="text-neutral-900">{{ $this->votes }} {{ $this->votes === 1 ? 'Stimme' : 'Stimmen' }}</strong>.
+                    <strong class="text-neutral-900">{{ $this->votes }} {{ $this->votes === 1 ? 'Stimme' : 'Stimmen' }}</strong>
                 </p>
             @endif
         </section>
@@ -54,9 +54,9 @@
                         @endif
                         <p class="mt-3 text-sm text-neutral-600">
                             @if ($poll->isPublic())
-                                Öffentlicher Wahlmodus: Die Wahl wird zusammen mit dem Namen deines Vereins gespeichert und im Ergebnis angezeigt.
+                                Öffentlicher Wahlmodus: Die Wahl wird zusammen mit dem Namen des Mitglieds gespeichert und im Ergebnis angezeigt.
                             @else
-                                Geheimer Wahlmodus: Es wird nur gespeichert, dass dein Verein abgestimmt hat – nicht, wie.
+                                Geheimer Wahlmodus: Es wird nur gespeichert, dass {{ $this->club->name }} abgestimmt hat – nicht, wie.
                             @endif
                         </p>
                     </div>
@@ -67,7 +67,7 @@
 
                     @if ($this->participation)
                         <div class="rounded border border-green-200 bg-green-50 p-4">
-                            <p class="font-semibold text-green-900">Dein Verein hat abgestimmt.</p>
+                            <p class="font-semibold text-green-900">{{ $this->club->name }} hat abgestimmt.</p>
                             @if ($poll->isPublic())
                                 <dl class="mt-2 space-y-1 text-sm">
                                     @foreach ($this->ownChoices() as $position => $label)
@@ -89,7 +89,7 @@
                                     </div>
                                 @endforeach
                             </dl>
-                            <p class="text-sm text-neutral-600">Die Stimme kann danach nicht mehr geändert werden. Es zählen alle {{ $this->votes }} Stimmen deines Vereins.</p>
+                            <p class="text-sm text-neutral-600">Die Stimme kann danach nicht mehr geändert werden. Es zählen alle {{ $this->votes }} Stimmen von {{ $this->club->name }}.</p>
                             <div class="flex gap-3">
                                 <button type="button" wire:click="back" class="btn-secondary">Zurück</button>
                                 <button type="button" wire:click="submit" wire:loading.attr="disabled" class="btn flex-1">Verbindlich abstimmen</button>

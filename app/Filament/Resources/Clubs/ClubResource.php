@@ -33,9 +33,9 @@ class ClubResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $modelLabel = 'Verein';
+    protected static ?string $modelLabel = 'Mitglied';
 
-    protected static ?string $pluralModelLabel = 'Vereine';
+    protected static ?string $pluralModelLabel = 'Mitglieder';
 
     public static function form(Schema $schema): Schema
     {
@@ -63,7 +63,7 @@ class ClubResource extends Resource
                             ->helperText(fn (Get $get) => 'Ergibt '.app(VoteWeightCalculator::class)->votesFor((int) $get('member_count')).' Stimme(n).'),
                         Toggle::make('active')
                             ->label('Aktiv')
-                            ->helperText('Inaktive Vereine können nicht eingecheckt werden.')
+                            ->helperText('Inaktive Mitglieder können nicht eingecheckt werden.')
                             ->default(true)
                             ->inline(false),
                         Select::make('users')

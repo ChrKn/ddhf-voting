@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 /**
+ * Ein Mitglied des DDHF (in der Regel ein Verein). In der Oberfläche heißt
+ * es „Mitglied“, im Code und in der Datenbank bleibt es „Club“.
+ *
  * @property-read int $votes aktuelle Stimmen laut Mitgliederzahl
  * @property-read AssemblyClub|null $attendance Pivot, wenn über Assembly::clubs() geladen
  */

@@ -44,7 +44,7 @@ it('zeigt bei offener Abstimmung nur den Fortschritt, keine Namen und kein Ergeb
     screen($this->assembly)
         ->assertSee('Antrag Haushalt')
         ->assertSee('Abstimmung läuft')
-        ->assertSee('1 von 1 Vereinen')
+        ->assertSee('1 von 1 Mitgliedern')
         ->assertDontSee('Geheimverein')
         ->assertDontSee('Dafür');
 });

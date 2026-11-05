@@ -29,7 +29,7 @@ class CastVote
     public function handle(User $user, Club $club, Poll $poll, array $choices): PollParticipation
     {
         if (! $user->represents($club)) {
-            throw new VotingException('Du bist nicht berechtigt, für diesen Verein abzustimmen.');
+            throw new VotingException('Du bist nicht berechtigt, für dieses Mitglied abzustimmen.');
         }
 
         try {
