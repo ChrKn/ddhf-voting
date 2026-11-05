@@ -115,4 +115,19 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    | Optional: Antworten (Reply-To) und Unzustellbarkeitsmeldungen (Bounces,
+    | Return-Path) an eine andere Adresse als den Absender leiten, z.B. wenn
+    | MAIL_FROM_ADDRESS ein nicht gelesenes Postfach ist. Leer = nicht gesetzt.
+    */
+
+    'reply_to' => [
+        'address' => env('MAIL_REPLY_TO_ADDRESS'),
+        'name' => env('MAIL_REPLY_TO_NAME'),
+    ],
+
+    'return_path' => [
+        'address' => env('MAIL_RETURN_PATH'),
+    ],
+
 ];
