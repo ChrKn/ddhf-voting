@@ -1,7 +1,7 @@
 # DDHF Wahl-O-Mat
 
 Abstimmungstool für Versammlungen des Deutschen Dachverbands für historisches Fechten e.V.
-Vereine stimmen mit einer Stimmenzahl ab, die sich aus ihrer Mitgliederzahl ergibt.
+Mitglieder (in der Regel Vereine) stimmen mit einer Stimmenzahl ab, die sich aus ihrer Mitgliederzahl ergibt.
 
 ## Stack
 
@@ -16,6 +16,49 @@ composer setup          # installiert Abhängigkeiten, legt .env und database/da
 php artisan voting:create-admin
 composer dev            # Server, Queue, Logs und Vite
 ```
+
+Die App braucht weder Queue-Worker noch Cronjob: Alles, auch der Mailversand, läuft direkt im Request.
+Auf Shared Hosting in der `.env` `QUEUE_CONNECTION=sync` setzen.
+
+## E-Mail
+
+Mails gehen nur in zwei Fällen raus: Einladung neuer Personen und „Passwort vergessen“ (dieselbe Mail,
+Link zum Passwort setzen). Ohne SMTP-Einstellungen landen sie in `storage/logs/laravel.log`
+(`MAIL_MAILER=log`).
+
+Produktiv über Google Workspace mit dem Konto `abstimmung@ddhf.de`:
+
+```dotenv
+MAIL_MAILER=smtp
+MAIL_SCHEME=null
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=abstimmung@ddhf.de
+MAIL_PASSWORD="<App-Passwort>"
+MAIL_FROM_ADDRESS="abstimmung@ddhf.de"
+MAIL_FROM_NAME="DDHF Wahl-O-Mat"
+
+# Antworten der Empfänger:innen an eine Adresse, die gelesen wird
+MAIL_REPLY_TO_ADDRESS="person@ddhf.de"
+MAIL_REPLY_TO_NAME="DDHF"
+
+# Unzustellbarkeitsmeldungen (Bounces)
+MAIL_RETURN_PATH="person@ddhf.de"
+```
+
+- Zugangsdaten wie bei den anderen Systemen, die schon über `abstimmung@ddhf.de` verschicken
+  (App-Passwort bzw. SMTP-Relay).
+- **Reply-To** lässt Gmail unverändert, Antworten kommen also bei der angegebenen Adresse an.
+- **Return-Path:** Gmail ersetzt den Envelope-Absender in der Regel durch das angemeldete Konto.
+  Dann landen Bounces trotz `MAIL_RETURN_PATH` bei `abstimmung@ddhf.de`. Prüfen: Testmail über
+  „Passwort vergessen?“ an sich selbst schicken, in Gmail „Original anzeigen“ und die Zeile
+  `Return-Path:` ansehen.
+- Falls dort `abstimmung@ddhf.de` steht, im Postfach `abstimmung@ddhf.de` einen Filter anlegen:
+  Suche `from:(mailer-daemon) OR subject:("Delivery Status Notification")`, Aktion „Weiterleiten an“
+  `person@ddhf.de`. Die Weiterleitungsadresse muss vorher unter *Einstellungen → Weiterleitung*
+  bestätigt werden.
+- Leere Werte für `MAIL_REPLY_TO_ADDRESS` / `MAIL_RETURN_PATH` bedeuten: nicht setzen.
+- Nach Änderungen an der `.env` bei gecachter Konfiguration `php artisan config:cache` erneut ausführen.
 
 ## Erstbefüllung
 
