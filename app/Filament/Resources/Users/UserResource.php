@@ -9,6 +9,7 @@ use App\Filament\Resources\Users\Pages\ListUsers;
 use App\Models\User;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -19,8 +20,11 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Password;
+use Throwable;
 use UnitEnum;
 
 class UserResource extends Resource
@@ -94,11 +98,49 @@ class UserResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('role')->label('Rolle')->options(Role::class),
+                // Wird gesetzt, sobald jemand über den Einladungslink ein Passwort vergibt
+                TernaryFilter::make('email_verified_at')
+                    ->label('Passwort gesetzt')
+                    ->nullable(),
             ])
             ->recordActions([
                 EditAction::make(),
                 static::inviteAction(),
+            ])
+            ->toolbarActions([
+                BulkAction::make('invite')
+                    ->label('Einladung senden')
+                    ->icon(Heroicon::OutlinedEnvelope)
+                    ->requiresConfirmation()
+                    ->modalDescription('Alle markierten Personen erhalten eine E-Mail mit einem Link, um ihr Passwort zu setzen. Die Mails werden direkt verschickt, das kann bei vielen Personen etwas dauern.')
+                    ->deselectRecordsAfterCompletion()
+                    ->action(fn (Collection $records) => static::sendInvitations($records)),
             ]);
+    }
+
+    /**
+     * @param  Collection<int, User>  $users
+     */
+    public static function sendInvitations(Collection $users): void
+    {
+        $sent = 0;
+        $failed = [];
+
+        foreach ($users as $user) {
+            try {
+                Password::sendResetLink(['email' => $user->email]) === Password::RESET_LINK_SENT
+                    ? $sent++
+                    : $failed[] = $user->email;
+            } catch (Throwable $e) {
+                report($e);
+                $failed[] = $user->email;
+            }
+        }
+
+        $notification = Notification::make()->title("{$sent} Einladung(en) verschickt");
+        $failed === []
+            ? $notification->success()->send()
+            : $notification->warning()->body('Nicht verschickt (evtl. gerade erst angefordert): '.implode(', ', $failed))->send();
     }
 
     public static function inviteAction(): Action
