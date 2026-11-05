@@ -2,24 +2,30 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Role;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
+/**
+ * @property Role $role
+ */
+#[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected $attributes = [
+        'role' => 'member',
+    ];
+
     /**
-     * Get the attributes that should be cast.
-     *
      * @return array<string, string>
      */
     protected function casts(): array
@@ -27,6 +33,36 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => Role::class,
         ];
+    }
+
+    /**
+     * @return BelongsToMany<Club, $this>
+     */
+    public function clubs(): BelongsToMany
+    {
+        return $this->belongsToMany(Club::class);
+    }
+
+    public function isSystemAdmin(): bool
+    {
+        return $this->role === Role::SystemAdmin;
+    }
+
+    public function isManager(): bool
+    {
+        return $this->role === Role::Manager;
+    }
+
+    /** Systemadmin oder Verwalter:in */
+    public function canManage(): bool
+    {
+        return $this->isSystemAdmin() || $this->isManager();
+    }
+
+    public function represents(Club $club): bool
+    {
+        return $this->clubs()->whereKey($club->getKey())->exists();
     }
 }

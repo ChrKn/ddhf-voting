@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\Role;
+use App\Models\Club;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -41,5 +43,20 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    public function systemAdmin(): static
+    {
+        return $this->state(fn (array $attributes) => ['role' => Role::SystemAdmin]);
+    }
+
+    public function manager(): static
+    {
+        return $this->state(fn (array $attributes) => ['role' => Role::Manager]);
+    }
+
+    public function forClub(Club $club): static
+    {
+        return $this->afterCreating(fn (User $user) => $user->clubs()->attach($club));
     }
 }
