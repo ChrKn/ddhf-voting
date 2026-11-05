@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Clubs;
 
 use App\Filament\Resources\Clubs\Pages\CreateClub;
 use App\Filament\Resources\Clubs\Pages\EditClub;
+use App\Filament\Resources\Clubs\Pages\ImportClubs;
 use App\Filament\Resources\Clubs\Pages\ListClubs;
 use App\Models\Club;
 use App\Services\VoteWeightCalculator;
@@ -123,6 +124,7 @@ class ClubResource extends Resource
         return [
             'index' => ListClubs::route('/'),
             'create' => CreateClub::route('/create'),
+            'import' => ImportClubs::route('/import'),
             'edit' => EditClub::route('/{record}/edit'),
         ];
     }
