@@ -69,6 +69,11 @@ class ConductAssembly extends Page
                 ->icon(Heroicon::OutlinedTv)
                 ->color('gray')
                 ->url(fn () => route('screen', $assembly->public_token), shouldOpenInNewTab: true),
+            Action::make('export')
+                ->label('Protokoll (CSV)')
+                ->icon(Heroicon::OutlinedArrowDownTray)
+                ->color('gray')
+                ->url(fn () => route('assemblies.export', $assembly)),
             Action::make('openAssembly')
                 ->label('Versammlung eröffnen')
                 ->icon(Heroicon::OutlinedPlay)

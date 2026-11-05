@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
  * @property AssemblyStatus $status
  * @property string $public_token
+ * @property Carbon|null $date
  */
 #[Fillable(['title', 'date', 'status'])]
 class Assembly extends Model

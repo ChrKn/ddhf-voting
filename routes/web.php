@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AssemblyExportController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Livewire\Ballot;
@@ -27,4 +28,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     Route::livewire('/', Ballot::class)->name('home');
+
+    Route::get('/admin/assemblies/{assembly}/export', AssemblyExportController::class)->name('assemblies.export');
 });
