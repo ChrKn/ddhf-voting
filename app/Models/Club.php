@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Gate;
 
 /**
  * @property-read int $votes aktuelle Stimmen laut Mitgliederzahl
+ * @property-read AssemblyClub|null $attendance Pivot, wenn über Assembly::clubs() geladen
  */
 #[Fillable(['name', 'member_count', 'active'])]
 class Club extends Model

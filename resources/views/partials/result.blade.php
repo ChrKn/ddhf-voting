@@ -24,7 +24,7 @@
                         </div>
                         @unless ($option['is_abstention'])
                             <div class="mt-1 h-2 overflow-hidden rounded bg-neutral-100">
-                                <div class="h-full rounded bg-ddhf" style="width: {{ $option['share'] }}%"></div>
+                                <div class="h-full rounded" style="width: {{ $option['share'] }}%; background-color: #cc1d1b"></div>
                             </div>
                         @endunless
                     </li>

@@ -2,12 +2,14 @@
 
 namespace App\Filament\Resources\Assemblies;
 
+use App\Filament\Resources\Assemblies\Pages\ConductAssembly;
 use App\Filament\Resources\Assemblies\Pages\CreateAssembly;
 use App\Filament\Resources\Assemblies\Pages\EditAssembly;
 use App\Filament\Resources\Assemblies\Pages\ListAssemblies;
 use App\Filament\Resources\Assemblies\RelationManagers\PollsRelationManager;
 use App\Models\Assembly;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
@@ -78,7 +80,12 @@ class AssemblyResource extends Resource
                     ->label('Eingecheckt')
                     ->counts('clubs'),
             ])
+            ->recordUrl(fn (Assembly $record) => static::getUrl('conduct', ['record' => $record]))
             ->recordActions([
+                Action::make('conduct')
+                    ->label('Leitung')
+                    ->icon(Heroicon::OutlinedPresentationChartBar)
+                    ->url(fn (Assembly $record) => static::getUrl('conduct', ['record' => $record])),
                 EditAction::make(),
             ]);
     }
@@ -96,6 +103,7 @@ class AssemblyResource extends Resource
             'index' => ListAssemblies::route('/'),
             'create' => CreateAssembly::route('/create'),
             'edit' => EditAssembly::route('/{record}/edit'),
+            'conduct' => ConductAssembly::route('/{record}/leitung'),
         ];
     }
 }

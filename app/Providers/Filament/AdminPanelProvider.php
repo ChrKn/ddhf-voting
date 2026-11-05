@@ -33,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandName('DDHF Wahl-O-Mat')
             ->brandLogo(asset('img/ddhf-logo.jpg'))
             ->brandLogoHeight('2.5rem')
