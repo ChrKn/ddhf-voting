@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 /**
  * Ein Mitglied des DDHF (in der Regel ein Verein). In der Oberfläche heißt
@@ -47,6 +48,12 @@ class Club extends Model
                 throw new AuthorizationException('Nur der Systemadmin darf die Mitgliederzahl ändern.');
             }
         });
+    }
+
+    /** Vergleichsform eines Namens: klein geschrieben, Leerraum vereinheitlicht. */
+    public static function normalizeName(string $name): string
+    {
+        return Str::lower(preg_replace('/\s+/u', ' ', trim($name)) ?? '');
     }
 
     /**
