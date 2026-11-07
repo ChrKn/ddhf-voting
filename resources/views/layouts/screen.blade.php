@@ -11,7 +11,7 @@
 <body class="min-h-screen bg-white text-neutral-900 antialiased">
     <div class="mx-auto flex min-h-screen max-w-5xl flex-col px-8 py-8">
         <header class="flex items-center justify-between gap-6 border-b border-neutral-200 pb-4">
-            <img src="{{ asset('img/ddhf-logo.jpg') }}" alt="DDHF Logo" class="w-48">
+            <img src="{{ asset('img/ddhf-logo.svg') }}" alt="DDHF Logo" class="w-48">
             <div class="text-right text-xl font-semibold text-neutral-600">{{ $title ?? '' }}</div>
         </header>
         <main class="flex-1 pt-8">

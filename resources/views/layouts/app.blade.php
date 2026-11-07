@@ -12,7 +12,7 @@
     <div class="mx-auto flex min-h-screen max-w-2xl flex-col px-4">
         <header class="pt-6 pb-4 text-center">
             <a href="{{ url('/') }}">
-                <img src="{{ asset('img/ddhf-logo.jpg') }}" alt="DDHF Logo" class="mx-auto w-56">
+                <img src="{{ asset('img/ddhf-logo.svg') }}" alt="DDHF Logo" class="mx-auto w-56">
             </a>
             <h1 class="mt-5 text-2xl font-bold">{{ $heading ?? 'Wahl-O-Mat' }}</h1>
 

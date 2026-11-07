@@ -36,7 +36,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->brandName('DDHF Wahl-O-Mat')
-            ->brandLogo(asset('img/ddhf-logo.jpg'))
+            ->brandLogo(asset('img/ddhf-logo.svg'))
             ->brandLogoHeight('2.5rem')
             ->colors([
                 'primary' => Color::hex('#cc1d1b'),
