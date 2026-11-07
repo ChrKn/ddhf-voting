@@ -7,6 +7,7 @@ use App\Enums\PollStatus;
 use App\Exceptions\VotingException;
 use App\Models\Poll;
 use App\Models\User;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -70,8 +71,10 @@ class PollLifecycle
 
     public function close(Poll $poll): void
     {
-        $this->transition($poll, PollStatus::Open, PollStatus::Closed, 'Die Abstimmung ist nicht offen.', AssemblyEventType::PollClosed, [
+        $this->transition($poll, PollStatus::Open, PollStatus::Closed, 'Die Abstimmung ist nicht offen.', AssemblyEventType::PollClosed, fn (Poll $poll) => [
             'closed_at' => now(),
+            // Anwesenheit festhalten; spätere Checkouts ändern die Beteiligung nicht mehr
+            ...PollResult::for($poll)->currentAttendance(),
         ]);
     }
 
@@ -98,6 +101,8 @@ class PollLifecycle
                 'status' => PollStatus::Draft,
                 'opened_at' => null,
                 'closed_at' => null,
+                'clubs_present' => null,
+                'votes_present' => null,
             ])->save();
 
             $poll->assembly->record(AssemblyEventType::PollReset, poll: $poll, details: [
@@ -116,9 +121,9 @@ class PollLifecycle
     }
 
     /**
-     * @param  array<string, mixed>  $extra
+     * @param  (Closure(Poll): array<string, mixed>)|null  $extra  Zusätzliche Felder, berechnet innerhalb der Transaktion
      */
-    private function transition(Poll $poll, PollStatus $from, PollStatus $to, string $error, AssemblyEventType $event, array $extra = []): void
+    private function transition(Poll $poll, PollStatus $from, PollStatus $to, string $error, AssemblyEventType $event, ?Closure $extra = null): void
     {
         DB::transaction(function () use ($poll, $from, $to, $error, $event, $extra) {
             $poll = $this->locked($poll);
@@ -127,7 +132,7 @@ class PollLifecycle
                 throw new VotingException($error);
             }
 
-            $poll->forceFill(['status' => $to, ...$extra])->save();
+            $poll->forceFill(['status' => $to, ...($extra ? $extra($poll) : [])])->save();
             $poll->assembly->record($event, poll: $poll);
         });
 

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AssemblyClub;
 use App\Models\Club;
 use App\Models\Poll;
 use App\Models\PollParticipation;
@@ -30,11 +31,34 @@ class PollResult
     {
         $participations = $this->poll->participations();
 
+        // Nach dem Beenden zählt die festgehaltene Anwesenheit, vorher die aktuelle
+        $attendance = $this->poll->clubs_present !== null && $this->poll->votes_present !== null
+            ? ['clubs_present' => $this->poll->clubs_present, 'votes_present' => $this->poll->votes_present]
+            : $this->currentAttendance();
+
         return [
-            'clubs_present' => $this->poll->assembly->clubs()->count(),
+            'clubs_present' => $attendance['clubs_present'],
             'clubs_voted' => (clone $participations)->count(),
-            'votes_present' => $this->poll->assembly->totalVotes(),
+            'votes_present' => $attendance['votes_present'],
             'votes_cast' => (int) (clone $participations)->sum('votes'),
+        ];
+    }
+
+    /**
+     * Aktuell eingecheckte Mitglieder und ihre Stimmen. Wer schon abgestimmt
+     * und danach ausgecheckt hat, zählt mit den abgegebenen Stimmen weiter
+     * als anwesend, sonst stünden mehr abgegebene als anwesende Stimmen da.
+     *
+     * @return array{clubs_present: int, votes_present: int}
+     */
+    public function currentAttendance(): array
+    {
+        $present = AssemblyClub::query()->where('assembly_id', $this->poll->assembly_id);
+        $leftAfterVoting = $this->poll->participations()->whereNotIn('club_id', (clone $present)->select('club_id'));
+
+        return [
+            'clubs_present' => (clone $present)->count() + (clone $leftAfterVoting)->count(),
+            'votes_present' => (int) (clone $present)->sum('votes') + (int) (clone $leftAfterVoting)->sum('votes'),
         ];
     }
 
