@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AssemblyExportController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Livewire\Ballot;
 use App\Livewire\ResultScreen;
 use Illuminate\Support\Facades\Route;
@@ -24,8 +26,11 @@ Route::livewire('/screen/{token}', ResultScreen::class)
     ->middleware('throttle:120,1')
     ->name('screen');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', EnsurePasswordIsChanged::class])->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    Route::get('/passwort-aendern', [PasswordChangeController::class, 'edit'])->name('password.change');
+    Route::post('/passwort-aendern', [PasswordChangeController::class, 'update'])->name('password.change.update');
 
     Route::livewire('/', Ballot::class)->name('home');
 

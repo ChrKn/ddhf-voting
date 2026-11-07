@@ -57,6 +57,7 @@ class PasswordResetController extends Controller
                 $user->forceFill([
                     'password' => $password,
                     'remember_token' => Str::random(60),
+                    'must_change_password' => false,
                     'email_verified_at' => $user->email_verified_at ?? now(),
                 ])->save();
 

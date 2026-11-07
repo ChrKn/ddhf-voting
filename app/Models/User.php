@@ -15,6 +15,7 @@ use Illuminate\Notifications\Notifiable;
 
 /**
  * @property Role $role
+ * @property bool $must_change_password
  */
 #[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'remember_token'])]
@@ -25,6 +26,7 @@ class User extends Authenticatable implements FilamentUser
 
     protected $attributes = [
         'role' => 'member',
+        'must_change_password' => false,
     ];
 
     /**
@@ -36,6 +38,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => Role::class,
+            'must_change_password' => 'boolean',
         ];
     }
 
