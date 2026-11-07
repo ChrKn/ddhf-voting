@@ -97,3 +97,24 @@ it('schreibt den Ablauf ins Protokoll', function () {
         ->toContain('Gestartet;"'.$poll->refresh()->opened_at->format('d.m.Y H:i:s').'"')
         ->toContain('Beendet;"'.$poll->closed_at->format('d.m.Y H:i:s').'"');
 });
+
+it('übernimmt beim erneuten Check-in die Stimmenzahl vom ersten Check-in', function () {
+    $this->assemblies->open($this->assembly);
+    $this->assemblies->checkIn($this->assembly, $this->club);
+    $this->assemblies->checkOut($this->assembly, $this->club);
+
+    $this->actingAs(User::factory()->systemAdmin()->create());
+    $this->club->update(['member_count' => 400]);
+
+    $this->assemblies->checkIn($this->assembly, $this->club);
+
+    expect($this->assemblies->votesOf($this->assembly, $this->club))->toBe(3)
+        ->and($this->assembly->events()->get()->last()->votes)->toBe(3);
+
+    // In einer neuen Versammlung gilt die aktuelle Mitgliederzahl
+    $next = Assembly::factory()->create();
+    $this->assemblies->open($next);
+    $this->assemblies->checkIn($next, $this->club);
+
+    expect($this->assemblies->votesOf($next, $this->club))->toBe(9);
+});

@@ -44,7 +44,9 @@ class AssemblyLifecycle
 
     /**
      * Checkt einen Verein ein und friert seine aktuelle Stimmenzahl ein.
-     * Ein erneuter Check-in ändert den Snapshot nicht.
+     * Ein erneuter Check-in ändert den Snapshot nicht, auch nicht nach einem
+     * Checkout: Dann gilt die Stimmenzahl vom ersten Check-in dieser
+     * Versammlung, selbst wenn sich die Mitgliederzahl zwischendurch geändert hat.
      */
     public function checkIn(Assembly $assembly, Club $club): void
     {
@@ -60,7 +62,12 @@ class AssemblyLifecycle
             return;
         }
 
-        $votes = $club->votes;
+        $firstCheckIn = $assembly->events()
+            ->where('type', AssemblyEventType::CheckedIn)
+            ->where('club_id', $club->getKey())
+            ->value('votes');
+
+        $votes = $firstCheckIn === null ? $club->votes : (int) $firstCheckIn;
 
         DB::transaction(function () use ($assembly, $club, $votes) {
             $assembly->clubs()->attach($club, [
