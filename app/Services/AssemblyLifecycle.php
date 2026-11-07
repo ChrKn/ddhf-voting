@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Enums\AssemblyEventType;
 use App\Enums\AssemblyStatus;
 use App\Enums\PollStatus;
 use App\Exceptions\VotingException;
 use App\Models\Assembly;
 use App\Models\AssemblyClub;
 use App\Models\Club;
+use Illuminate\Support\Facades\DB;
 
 /** Versammlung öffnen/schließen und Anwesenheit (Check-in) der Vereine. */
 class AssemblyLifecycle
@@ -18,7 +20,10 @@ class AssemblyLifecycle
             throw new VotingException('Nur Versammlungen in Vorbereitung können eröffnet werden.');
         }
 
-        $assembly->update(['status' => AssemblyStatus::Open]);
+        DB::transaction(function () use ($assembly) {
+            $assembly->update(['status' => AssemblyStatus::Open]);
+            $assembly->record(AssemblyEventType::AssemblyOpened);
+        });
     }
 
     public function close(Assembly $assembly): void
@@ -31,7 +36,10 @@ class AssemblyLifecycle
             throw new VotingException('Es ist noch eine Abstimmung offen. Bitte zuerst schließen.');
         }
 
-        $assembly->update(['status' => AssemblyStatus::Closed]);
+        DB::transaction(function () use ($assembly) {
+            $assembly->update(['status' => AssemblyStatus::Closed]);
+            $assembly->record(AssemblyEventType::AssemblyClosed);
+        });
     }
 
     /**
@@ -52,10 +60,15 @@ class AssemblyLifecycle
             return;
         }
 
-        $assembly->clubs()->attach($club, [
-            'votes' => $club->votes,
-            'checked_in_at' => now(),
-        ]);
+        $votes = $club->votes;
+
+        DB::transaction(function () use ($assembly, $club, $votes) {
+            $assembly->clubs()->attach($club, [
+                'votes' => $votes,
+                'checked_in_at' => now(),
+            ]);
+            $assembly->record(AssemblyEventType::CheckedIn, club: $club, votes: $votes);
+        });
     }
 
     public function checkOut(Assembly $assembly, Club $club): void
@@ -64,7 +77,16 @@ class AssemblyLifecycle
             throw new VotingException('Die Versammlung ist beendet.');
         }
 
-        $assembly->clubs()->detach($club);
+        $votes = $this->votesOf($assembly, $club);
+
+        if ($votes === null) {
+            return;
+        }
+
+        DB::transaction(function () use ($assembly, $club, $votes) {
+            $assembly->clubs()->detach($club);
+            $assembly->record(AssemblyEventType::CheckedOut, club: $club, votes: $votes);
+        });
     }
 
     /** Stimmen-Snapshot eines eingecheckten Vereins (null = nicht eingecheckt). */

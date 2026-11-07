@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AssemblyEventType;
 use App\Enums\PollStatus;
 use App\Exceptions\VotingException;
 use App\Models\Poll;
@@ -60,6 +61,8 @@ class PollLifecycle
                 'opened_at' => now(),
                 'closed_at' => null,
             ])->save();
+
+            $poll->assembly->record(AssemblyEventType::PollOpened, poll: $poll);
         });
 
         $poll->refresh();
@@ -67,14 +70,14 @@ class PollLifecycle
 
     public function close(Poll $poll): void
     {
-        $this->transition($poll, PollStatus::Open, PollStatus::Closed, 'Die Abstimmung ist nicht offen.', [
+        $this->transition($poll, PollStatus::Open, PollStatus::Closed, 'Die Abstimmung ist nicht offen.', AssemblyEventType::PollClosed, [
             'closed_at' => now(),
         ]);
     }
 
     public function publish(Poll $poll): void
     {
-        $this->transition($poll, PollStatus::Closed, PollStatus::Published, 'Nur geschlossene Abstimmungen können veröffentlicht werden.');
+        $this->transition($poll, PollStatus::Closed, PollStatus::Published, 'Nur geschlossene Abstimmungen können veröffentlicht werden.', AssemblyEventType::PollPublished);
     }
 
     /** Verwirft alle Stimmen und setzt die Abstimmung auf „In Vorbereitung“. */
@@ -97,6 +100,10 @@ class PollLifecycle
                 'closed_at' => null,
             ])->save();
 
+            $poll->assembly->record(AssemblyEventType::PollReset, poll: $poll, details: [
+                'discarded_participations' => $participations,
+            ], by: $by);
+
             Log::notice('Abstimmung zurückgesetzt', [
                 'poll_id' => $poll->getKey(),
                 'title' => $poll->title,
@@ -111,9 +118,9 @@ class PollLifecycle
     /**
      * @param  array<string, mixed>  $extra
      */
-    private function transition(Poll $poll, PollStatus $from, PollStatus $to, string $error, array $extra = []): void
+    private function transition(Poll $poll, PollStatus $from, PollStatus $to, string $error, AssemblyEventType $event, array $extra = []): void
     {
-        DB::transaction(function () use ($poll, $from, $to, $error, $extra) {
+        DB::transaction(function () use ($poll, $from, $to, $error, $event, $extra) {
             $poll = $this->locked($poll);
 
             if ($poll->status !== $from) {
@@ -121,6 +128,7 @@ class PollLifecycle
             }
 
             $poll->forceFill(['status' => $to, ...$extra])->save();
+            $poll->assembly->record($event, poll: $poll);
         });
 
         $poll->refresh();

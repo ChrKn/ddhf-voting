@@ -11,7 +11,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Protokoll einer Versammlung als CSV (Semikolon, UTF-8 mit BOM, damit Excel
- * Umlaute korrekt anzeigt): Anwesenheit und alle durchgeführten Abstimmungen.
+ * Umlaute korrekt anzeigt): Anwesenheit, alle durchgeführten Abstimmungen und
+ * der Ablauf mit Check-ins/Checkouts und Start/Ende der Abstimmungen.
  */
 class AssemblyExportController extends Controller
 {
@@ -48,7 +49,8 @@ class AssemblyExportController extends Controller
                 $row([]);
                 $row(['Abstimmung', $poll->title]);
                 $row(['Art / Modus', $poll->type->label().' / '.$poll->mode->label()]);
-                $row(['Zeitraum', $poll->opened_at?->format('H:i').' – '.$poll->closed_at?->format('H:i')]);
+                $row(['Gestartet', $poll->opened_at?->format('d.m.Y H:i:s') ?? '']);
+                $row(['Beendet', $poll->closed_at?->format('d.m.Y H:i:s') ?? '']);
                 $row(['Beteiligung', "{$progress['clubs_voted']} von {$progress['clubs_present']} Mitgliedern, {$progress['votes_cast']} von {$progress['votes_present']} Stimmen"]);
                 $row(['Amt / Frage', 'Option', 'Stimmen', 'Anteil ohne Enthaltung (%)']);
 
@@ -73,6 +75,22 @@ class AssemblyExportController extends Controller
                         }
                     }
                 }
+            }
+
+            $row([]);
+            $row(['Ablauf']);
+            $row(['Zeit', 'Ereignis', 'Mitglied / Abstimmung', 'Stimmen', 'Durch', 'Hinweis']);
+            foreach ($assembly->events()->get() as $event) {
+                $discarded = $event->details['discarded_participations'] ?? null;
+
+                $row([
+                    $event->created_at?->format('d.m.Y H:i:s') ?? '',
+                    $event->type->label(),
+                    $event->subject ?? '',
+                    $event->votes ?? '',
+                    $event->user_name ?? '',
+                    $discarded === null ? '' : "{$discarded} Stimmabgabe(n) verworfen",
+                ]);
             }
 
             fclose($out);

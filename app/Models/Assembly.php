@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AssemblyEventType;
 use App\Enums\AssemblyStatus;
 use Database\Factories\AssemblyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -51,6 +52,41 @@ class Assembly extends Model
     public function polls(): HasMany
     {
         return $this->hasMany(Poll::class)->orderBy('sort')->orderBy('id');
+    }
+
+    /**
+     * Ablaufprotokoll in zeitlicher Reihenfolge.
+     *
+     * @return HasMany<AssemblyEvent, $this>
+     */
+    public function events(): HasMany
+    {
+        return $this->hasMany(AssemblyEvent::class)->orderBy('id');
+    }
+
+    /**
+     * Schreibt einen Eintrag ins Ablaufprotokoll.
+     *
+     * @param  array<string, mixed>|null  $details
+     */
+    public function record(
+        AssemblyEventType $type,
+        ?Club $club = null,
+        ?Poll $poll = null,
+        ?int $votes = null,
+        ?array $details = null,
+        ?User $by = null,
+    ): AssemblyEvent {
+        return $this->events()->create([
+            'type' => $type,
+            'club_id' => $club?->getKey(),
+            'poll_id' => $poll?->getKey(),
+            'subject' => $club->name ?? $poll?->title,
+            'votes' => $votes,
+            'details' => $details,
+            'user_id' => $by?->getKey(),
+            'user_name' => $by?->name,
+        ]);
     }
 
     /**
