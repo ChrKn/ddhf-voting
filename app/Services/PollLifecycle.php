@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\Log;
  */
 class PollLifecycle
 {
-    public function __construct(private readonly PollStructure $structure) {}
+    public function __construct(
+        private readonly PollStructure $structure,
+        private readonly VoteTraceCleaner $traces,
+    ) {}
 
     public function open(Poll $poll): void
     {
@@ -76,6 +79,9 @@ class PollLifecycle
             // Anwesenheit festhalten; spätere Checkouts ändern die Beteiligung nicht mehr
             ...PollResult::for($poll)->currentAttendance(),
         ]);
+
+        // Erst nach dem Commit: ab jetzt kommen keine Abgaben mehr hinzu
+        $this->traces->flush();
     }
 
     public function publish(Poll $poll): void
@@ -117,6 +123,7 @@ class PollLifecycle
             ]);
         });
 
+        $this->traces->flush();
         $poll->refresh();
     }
 

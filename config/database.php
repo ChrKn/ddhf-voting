@@ -42,6 +42,11 @@ return [
             'journal_mode' => env('DB_JOURNAL_MODE', 'wal'),
             'synchronous' => env('DB_SYNCHRONOUS', 'normal'),
             'transaction_mode' => env('DB_TRANSACTION_MODE', 'IMMEDIATE'),
+            'pragmas' => [
+                // Gelöschte/überschriebene Daten mit Nullen überschreiben, damit
+                // keine alten Zählerstände geheimer Abstimmungen in der Datei bleiben
+                'secure_delete' => env('DB_SECURE_DELETE', 'on'),
+            ],
         ],
 
         'mysql' => [
