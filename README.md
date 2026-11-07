@@ -105,8 +105,29 @@ Konfiguriert über `.env`:
 | `DB_BUSY_TIMEOUT`     | `5000`      | Gleichzeitige Schreibzugriffe warten statt abzubrechen  |
 | `DB_SYNCHRONOUS`      | `normal`    | Sicher in Kombination mit WAL                           |
 | `DB_TRANSACTION_MODE` | `IMMEDIATE` | Schreibsperre direkt zu Beginn einer Transaktion        |
+| `DB_SECURE_DELETE`    | `on`        | Gelöschte Daten werden mit Nullen überschrieben         |
 
-Backup: `database/database.sqlite` (inkl. `-wal`/`-shm`-Dateien) vor jeder Versammlung sichern,
-am besten mit `sqlite3 database/database.sqlite ".backup backup.sqlite"`.
+### Geheime Abstimmungen und die Datenbankdatei
+
+Wie ein Mitglied geheim abgestimmt hat, wird nirgends gespeichert. Es gibt nur Summen pro Option.
+Solange eine Abstimmung läuft, steht in `database.sqlite-wal` aber noch die Reihenfolge der
+Abgaben (Teilnahme und Zählerstand nacheinander). Wer diese Datei in dem Moment kopiert, könnte
+Stimmen einzelnen Mitgliedern zuordnen.
+
+Deshalb wird die WAL-Datei beim Beenden oder Zurücksetzen jeder Abstimmung in die Datenbank
+übernommen und auf 0 Byte gekürzt; `DB_SECURE_DELETE` überschreibt freigegebene Bereiche. Danach
+ist keine Reihenfolge mehr rekonstruierbar. Klappt das Leeren nicht (z.B. weil ein Prozess die
+Datei blockiert), steht eine Warnung in `storage/logs/laravel.log`.
+
+**Backups und Kopien der Datenbank daher nie während einer laufenden geheimen Abstimmung ziehen**,
+sondern vor der Versammlung oder nachdem die Abstimmung beendet ist. Das gilt auch für automatische
+Server-Backups: Diese für die Dauer der Versammlung aussetzen oder so legen, dass sie nicht in
+eine Abstimmung fallen.
+
+### Backup
+
+`database/database.sqlite` vor jeder Versammlung sichern (siehe oben: nicht während einer geheimen
+Abstimmung), am besten mit `sqlite3 database/database.sqlite ".backup backup.sqlite"`. Dabei
+werden die `-wal`/`-shm`-Dateien automatisch berücksichtigt.
 
 Der alte Plain-PHP-Stand liegt unter `legacy/` und wird nicht deployed.
