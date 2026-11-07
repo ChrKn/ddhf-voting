@@ -1,4 +1,4 @@
-<x-layouts::app title="Anmelden" heading="Wahl-O-Mat Login">
+<x-layouts::app title="Anmelden" heading="MV Abstimmungssystem">
     <div class="card mx-auto max-w-sm">
         <form method="POST" action="{{ route('login') }}" class="space-y-4">
             @csrf

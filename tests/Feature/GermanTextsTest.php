@@ -14,7 +14,7 @@ it('verschickt die Einladung bzw. den Reset-Link auf Deutsch', function () {
     Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
         $mail = $notification->toMail($user);
 
-        return $mail->subject === 'Zugang zum DDHF Wahl-O-Mat'
+        return $mail->subject === 'Zugang zum DDHF MV Abstimmungssystem'
             && $mail->actionText === 'Passwort setzen'
             && str_contains($mail->actionUrl, '/passwort-setzen/');
     });

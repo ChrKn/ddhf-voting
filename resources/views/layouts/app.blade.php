@@ -14,7 +14,7 @@
             <a href="{{ url('/') }}">
                 <img src="{{ asset('img/ddhf-logo.svg') }}" alt="DDHF Logo" class="mx-auto w-56">
             </a>
-            <h1 class="mt-5 text-2xl font-bold">{{ $heading ?? 'Wahl-O-Mat' }}</h1>
+            <h1 class="mt-5 text-2xl font-bold">{{ $heading ?? 'MV Abstimmungssystem' }}</h1>
 
             @auth
                 <div class="mt-3 flex items-center justify-center gap-3 text-sm text-neutral-600">

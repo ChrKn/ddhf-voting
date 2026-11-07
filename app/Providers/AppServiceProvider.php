@@ -25,9 +25,9 @@ class AppServiceProvider extends ServiceProvider
             $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
 
             return (new MailMessage)
-                ->subject('Zugang zum DDHF Wahl-O-Mat')
+                ->subject('Zugang zum DDHF MV Abstimmungssystem')
                 ->greeting('Hallo!')
-                ->line('Für dich wurde ein Zugang zum DDHF Wahl-O-Mat eingerichtet bzw. ein neues Passwort angefordert.')
+                ->line('Für dich wurde ein Zugang zum DDHF MV Abstimmungssystem eingerichtet bzw. ein neues Passwort angefordert.')
                 ->action('Passwort setzen', $url)
                 ->line("Der Link ist {$minutes} Minuten gültig. Danach kannst du über „Passwort vergessen?“ einen neuen anfordern.")
                 ->line('Falls du damit nichts zu tun hast, kannst du diese E-Mail ignorieren.')

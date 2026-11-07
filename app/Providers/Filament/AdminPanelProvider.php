@@ -35,7 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->viteTheme('resources/css/filament/admin/theme.css')
-            ->brandName('DDHF Wahl-O-Mat')
+            ->brandName('DDHF MV Abstimmungssystem')
             ->brandLogo(asset('img/ddhf-logo.svg'))
             ->brandLogoHeight('2.5rem')
             ->colors([

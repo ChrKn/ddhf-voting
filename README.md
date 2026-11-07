@@ -1,4 +1,4 @@
-# DDHF Wahl-O-Mat
+# DDHF MV Abstimmungssystem
 
 Abstimmungstool für Versammlungen des Deutschen Dachverbands für historisches Fechten e.V.
 Mitglieder (in der Regel Vereine) stimmen mit einer Stimmenzahl ab, die sich aus ihrer Mitgliederzahl ergibt.
@@ -36,7 +36,7 @@ MAIL_PORT=587
 MAIL_USERNAME=abstimmung@ddhf.de
 MAIL_PASSWORD="<App-Passwort>"
 MAIL_FROM_ADDRESS="abstimmung@ddhf.de"
-MAIL_FROM_NAME="DDHF Wahl-O-Mat"
+MAIL_FROM_NAME="DDHF MV Abstimmungssystem"
 
 # Antworten der Empfänger:innen an eine Adresse, die gelesen wird
 MAIL_REPLY_TO_ADDRESS="person@ddhf.de"
