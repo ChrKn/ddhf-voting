@@ -25,8 +25,28 @@ it('erlaubt nur dem Systemadmin, die Mitgliederzahl zu ändern', function () {
 
 it('erlaubt nur dem Systemadmin, Personen zu verwalten', function () {
     expect($this->admin->can('create', User::class))->toBeTrue()
-        ->and($this->manager->can('viewAny', User::class))->toBeFalse()
+        ->and($this->manager->can('viewAny', User::class))->toBeTrue()
+        ->and($this->manager->can('create', User::class))->toBeFalse()
+        ->and($this->manager->can('update', $this->member))->toBeFalse()
+        ->and($this->member->can('viewAny', User::class))->toBeFalse()
         ->and($this->admin->can('delete', $this->admin))->toBeFalse();
+});
+
+it('erlaubt vorläufige Passwörter nur für Vertreter:innen', function () {
+    $otherManager = User::factory()->manager()->create();
+
+    expect($this->admin->can('setPassword', $this->member))->toBeTrue()
+        ->and($this->manager->can('setPassword', $this->member))->toBeTrue()
+        ->and($this->manager->can('setPassword', $otherManager))->toBeFalse()
+        ->and($this->manager->can('setPassword', $this->admin))->toBeFalse()
+        ->and($this->admin->can('setPassword', $this->manager))->toBeFalse()
+        ->and($this->member->can('setPassword', $this->member))->toBeFalse();
+});
+
+it('lässt Verwalter:innen nur Vertreter:innen einladen', function () {
+    expect($this->admin->can('invite', $this->manager))->toBeTrue()
+        ->and($this->manager->can('invite', $this->member))->toBeTrue()
+        ->and($this->manager->can('invite', $this->admin))->toBeFalse();
 });
 
 it('lässt Verwalter:innen Versammlungen leiten', function () {

@@ -39,9 +39,13 @@ describe('Zugang', function () {
         $this->actingAs($this->manager)->get('/admin')->assertOk();
     });
 
-    it('zeigt die Personenverwaltung nur dem Systemadmin', function () {
-        $this->actingAs($this->admin)->get(UserResource::getUrl())->assertOk();
-        $this->actingAs($this->manager)->get(UserResource::getUrl())->assertForbidden();
+    it('lässt nur den Systemadmin Personen bearbeiten, Verwalter:innen nur ansehen', function () {
+        $person = User::factory()->create();
+
+        $this->actingAs($this->admin)->get(UserResource::getUrl('edit', ['record' => $person]))->assertOk();
+        $this->actingAs($this->manager)->get(UserResource::getUrl())->assertOk();
+        $this->actingAs($this->manager)->get(UserResource::getUrl('create'))->assertForbidden();
+        $this->actingAs($this->manager)->get(UserResource::getUrl('edit', ['record' => $person]))->assertForbidden();
     });
 });
 

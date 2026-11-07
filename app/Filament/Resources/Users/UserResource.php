@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Users;
 
+use App\Actions\SetTemporaryPassword;
 use App\Enums\Role;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
@@ -24,6 +25,7 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\HtmlString;
 use Throwable;
 use UnitEnum;
 
@@ -106,6 +108,7 @@ class UserResource extends Resource
             ->recordActions([
                 EditAction::make(),
                 static::inviteAction(),
+                static::setPasswordAction(),
             ])
             ->toolbarActions([
                 BulkAction::make('invite')
@@ -113,6 +116,7 @@ class UserResource extends Resource
                     ->icon(Heroicon::OutlinedEnvelope)
                     ->requiresConfirmation()
                     ->modalDescription('Alle markierten Personen erhalten eine E-Mail mit einem Link, um ihr Passwort zu setzen. Die Mails werden direkt verschickt, das kann bei vielen Personen etwas dauern.')
+                    ->authorizeIndividualRecords('invite')
                     ->deselectRecordsAfterCompletion()
                     ->action(fn (Collection $records) => static::sendInvitations($records)),
             ]);
@@ -150,8 +154,38 @@ class UserResource extends Resource
             ->icon(Heroicon::OutlinedEnvelope)
             ->requiresConfirmation()
             ->modalDescription('Die Person erhält eine E-Mail mit einem Link, um ihr Passwort zu setzen.')
+            ->authorize('invite')
             ->action(function (User $record) {
                 static::sendInvitation($record);
+            });
+    }
+
+    /** Für den Fall, dass die Einladungsmail partout nicht ankommt */
+    public static function setPasswordAction(): Action
+    {
+        return Action::make('setPassword')
+            ->label('Passwort festlegen')
+            ->icon(Heroicon::OutlinedKey)
+            ->color('warning')
+            ->requiresConfirmation()
+            ->modalHeading('Vorläufiges Passwort festlegen')
+            ->modalDescription('Es wird ein zufälliges Passwort erzeugt und einmalig angezeigt. Bitte telefonisch oder persönlich weitergeben. Die Person muss es beim ersten Login durch ein eigenes ersetzen. Ein bisheriges Passwort gilt danach nicht mehr.')
+            ->modalSubmitActionLabel('Passwort erzeugen')
+            ->authorize('setPassword')
+            ->action(function (User $record, SetTemporaryPassword $setPassword) {
+                /** @var User $by */
+                $by = auth()->user();
+                $password = $setPassword($record, $by);
+
+                Notification::make()
+                    ->title("Vorläufiges Passwort für {$record->name}")
+                    ->body(new HtmlString(
+                        '<p class="font-mono text-lg font-semibold select-all">'.e($password).'</p>'
+                        .'<p>Anmeldung mit '.e($record->email).'. Das Passwort wird nur jetzt angezeigt.</p>'
+                    ))
+                    ->success()
+                    ->persistent()
+                    ->send();
             });
     }
 

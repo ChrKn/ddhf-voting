@@ -60,6 +60,12 @@ MAIL_RETURN_PATH="person@ddhf.de"
 - Leere Werte für `MAIL_REPLY_TO_ADDRESS` / `MAIL_RETURN_PATH` bedeuten: nicht setzen.
 - Nach Änderungen an der `.env` bei gecachter Konfiguration `php artisan config:cache` erneut ausführen.
 
+**Wenn eine Mail partout nicht ankommt:** Systemadmin und Verwalter:innen können unter *Personen*
+bei Vertreter:innen „Passwort festlegen“ wählen. Die App erzeugt ein vorläufiges Passwort
+(z.B. `kmtp-4z9w-rxa3`) und zeigt es einmalig an; bitte telefonisch oder persönlich weitergeben.
+Beim ersten Login muss die Person ein eigenes Passwort festlegen. Verwalter:innen sehen die
+Personenliste, können aber nichts bearbeiten und nur Vertreter:innen einladen.
+
 ## Erstbefüllung
 
 1. **Mitglieder** in der Verwaltung unter *Mitglieder → Importieren* hochladen

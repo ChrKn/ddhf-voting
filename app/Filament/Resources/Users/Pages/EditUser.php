@@ -14,6 +14,7 @@ class EditUser extends EditRecord
     {
         return [
             UserResource::inviteAction(),
+            UserResource::setPasswordAction(),
             DeleteAction::make(),
         ];
     }

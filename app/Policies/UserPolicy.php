@@ -2,19 +2,24 @@
 
 namespace App\Policies;
 
+use App\Enums\Role;
 use App\Models\User;
 
-/** Personen und Rollen verwaltet nur der Systemadmin. */
+/**
+ * Personen und Rollen verwaltet der Systemadmin. Verwalter:innen sehen die
+ * Liste und können Vertreter:innen einladen oder ihnen ein vorläufiges
+ * Passwort geben, z.B. wenn bei der Versammlung jemand nicht hereinkommt.
+ */
 class UserPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isSystemAdmin();
+        return $user->canManage();
     }
 
     public function view(User $user, User $model): bool
     {
-        return $user->isSystemAdmin() || $user->is($model);
+        return $user->canManage() || $user->is($model);
     }
 
     public function create(User $user): bool
@@ -36,5 +41,16 @@ class UserPolicy
     public function deleteAny(User $user): bool
     {
         return $user->isSystemAdmin();
+    }
+
+    public function invite(User $user, User $model): bool
+    {
+        return $user->isSystemAdmin() || ($user->isManager() && $model->role === Role::Member);
+    }
+
+    /** Nur bei Vertreter:innen, nicht bei Admins oder Verwalter:innen */
+    public function setPassword(User $user, User $model): bool
+    {
+        return $user->canManage() && $model->role === Role::Member;
     }
 }
