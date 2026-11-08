@@ -67,14 +67,14 @@ describe('Vereine und Mitgliederzahl', function () {
         $this->actingAs($this->admin);
 
         Livewire::test(CreateVotingMember::class)
-            ->fillForm(['name' => 'Präsident:in', 'type' => VotingMemberType::BoardMember->value])
+            ->fillForm(['name' => 'Schatzmeister:in', 'type' => VotingMemberType::BoardMember->value])
             ->assertFormFieldIsHidden('member_count')
             ->assertFormFieldIsVisible('votes')
             ->fillForm(['votes' => 2, 'active' => true])
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $post = VotingMember::firstWhere('name', 'Präsident:in');
+        $post = VotingMember::firstWhere('name', 'Schatzmeister:in');
         expect($post->type)->toBe(VotingMemberType::BoardMember)
             ->and($post->member_count)->toBeNull()
             ->and($post->votes)->toBe(2);

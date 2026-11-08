@@ -47,7 +47,7 @@ it('akzeptiert Spalten in beliebiger Reihenfolge und „Verein“ statt „Mitgl
 });
 
 it('ordnet Personen auch Präsidiumsposten zu, Spalte „Posten“', function () {
-    $post = VotingMember::factory()->boardMember(2, 'Präsident:in')->create();
+    $post = VotingMember::firstWhere('name', 'Präsident:in'); // aus der Migration
     $file = peopleCsv('Posten;E-Mail;Name
 Präsident:in;praesi@example.com;Pia Präsi
 ');

@@ -47,7 +47,7 @@ it('friert die Stimmen beim Check-in ein', function () {
 });
 
 it('gibt Präsidiumsposten ihre feste Stimmenzahl, unabhängig von der Formel', function () {
-    $post = VotingMember::factory()->boardMember(2, 'Präsident:in')->create();
+    $post = VotingMember::factory()->boardMember(2, 'Schatzmeister:in')->create();
 
     expect($post->type)->toBe(VotingMemberType::BoardMember)
         ->and($post->isBoardMember())->toBeTrue()
@@ -79,7 +79,7 @@ it('trennt Mitglieder und Präsidiumsposten per Scope', function () {
     $post = VotingMember::factory()->boardMember()->create();
 
     expect(VotingMember::members()->pluck('id')->all())->toBe([$member->id])
-        ->and(VotingMember::boardMembers()->pluck('id')->all())->toBe([$post->id]);
+        ->and(VotingMember::boardMembers()->pluck('id')->all())->toContain($post->id)->not->toContain($member->id);
 });
 
 it('friert auch die Stimmen eines Präsidiumspostens beim Check-in ein', function () {
@@ -90,6 +90,24 @@ it('friert auch die Stimmen eines Präsidiumspostens beim Check-in ein', functio
 
     expect($assembly->votingMembers()->first()->attendance->votes)->toBe(2)
         ->and($assembly->totalVotes())->toBe(2);
+});
+
+it('legt die Präsidiumsposten nach § 19 der Satzung mit je einer Stimme an', function () {
+    $posts = VotingMember::boardMembers()->orderBy('id')->get();
+
+    expect($posts->pluck('name')->all())->toBe([
+        'Präsident:in',
+        'Vizepräsident:in Wirtschaft und Finanzen',
+        'Vizepräsident:in Sport und Sportentwicklung',
+        'Vizepräsident:in Bildung',
+        'Gleichstellungsbeauftragte:r',
+        'Jugendbeauftragte:r',
+        'Beauftragte:r für internationale Kommunikation',
+        'Aktivenvertreter:in',
+    ])
+        ->and($posts->pluck('votes')->unique()->all())->toBe([1])
+        ->and($posts->every->active)->toBeTrue()
+        ->and(VotingMember::members()->count())->toBe(0);
 });
 
 it('legt einen Antrag mit Ja, Nein und Enthaltung an', function () {

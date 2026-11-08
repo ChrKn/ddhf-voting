@@ -46,13 +46,13 @@ class DatabaseSeeder extends Seeder
             return $votingMember;
         });
 
-        // Präsidiumsposten mit festen Stimmen; die Stimmen hängen am Posten, nicht an der Person
+        // Die Präsidiumsposten legt die Migration an; zwei davon bekommen hier eine Person
         $board = collect([
-            'praesidium' => ['Präsident:in', 2, 'Präsidium Beispiel'],
-            'vize' => ['Vizepräsident:in Sport', 1, 'Vize Beispiel'],
+            'praesidium' => ['Präsident:in', 'Präsidium Beispiel'],
+            'vize' => ['Vizepräsident:in Sport und Sportentwicklung', 'Vize Beispiel'],
         ])->map(function (array $data, string $key) {
-            [$name, $votes, $person] = $data;
-            $post = VotingMember::factory()->boardMember($votes, $name)->create();
+            [$name, $person] = $data;
+            $post = VotingMember::query()->boardMembers()->where('name', $name)->firstOrFail();
             User::factory()->forVotingMember($post)->create(['name' => $person, 'email' => "{$key}@example.com"]);
 
             return $post;

@@ -79,7 +79,7 @@ describe('Zuordnung', function () {
 describe('Präsidiumsposten', function () {
     it('bietet sie weder als Ziel an noch meldet sie als fehlend', function () {
         $this->actingAs(User::factory()->systemAdmin()->create());
-        VotingMember::factory()->boardMember(2, 'Präsident:in')->create();
+        // „Präsident:in“ legt die Migration an
         VotingMember::factory()->create(['name' => 'Fechtschule Nord']);
 
         $rows = $this->import->rows([['Name', 'Mitglieder'], ['Präsident:in', '10']], 0, 1, true);
@@ -95,7 +95,7 @@ Neu;5
 
     it('lässt keinen Namen eines Postens ein zweites Mal zu', function () {
         $this->actingAs(User::factory()->systemAdmin()->create());
-        $post = VotingMember::factory()->boardMember(2, 'Präsident:in')->create();
+        $post = VotingMember::firstWhere('name', 'Präsident:in'); // aus der Migration
 
         expect(fn () => $this->import->apply([
             ['line' => 2, 'name' => 'Präsident:in', 'count' => 3, 'error' => null, 'target' => 'new', 'rename' => true, 'similar' => null],
@@ -105,7 +105,7 @@ Neu;5
             ['line' => 2, 'name' => 'X', 'count' => 3, 'error' => null, 'target' => (string) $post->id, 'rename' => true, 'similar' => null],
         ]))->toThrow(VotingException::class, 'gibt es nicht mehr');
 
-        expect($post->fresh())->votes->toBe(2)->name->toBe('Präsident:in');
+        expect($post->fresh())->votes->toBe(1)->name->toBe('Präsident:in');
     });
 });
 
@@ -174,7 +174,7 @@ describe('Übernahme', function () {
             ->toThrow(VotingException::class, 'mehrfach');
 
         expect($this->nord->fresh()->member_count)->toBe(100)
-            ->and(VotingMember::count())->toBe(2);
+            ->and(VotingMember::members()->count())->toBe(2);
     });
 });
 

@@ -4,6 +4,11 @@ Notable changes to the DDHF MV Abstimmungssystem.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+- The eight board posts under § 19 of the statutes are created by a migration, one vote each.
+
 ## 1.0.0 - 2026-08-29
 
 First release, rebuilt on Laravel; replaces the plain-PHP system that was originally meant 

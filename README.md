@@ -21,6 +21,94 @@ composer dev            # Server, Queue, Logs und Vite
 Die App braucht weder Queue-Worker noch Cronjob: Alles, auch der Mailversand, läuft direkt im Request.
 Auf Shared Hosting in der `.env` `QUEUE_CONNECTION=sync` setzen.
 
+## Deployment (Shared Hosting ohne Node)
+
+Auf dem Server gibt es kein npm, `composer setup` bricht dort beim `npm install` ab. Node wird aber
+nur zum **Bauen** von CSS und JS gebraucht. Zur Laufzeit liegen die fertigen Dateien in
+`public/build/` und werden als statische Dateien ausgeliefert. Fehlt dieser Ordner, antwortet jede
+Seite mit Fehler 500 (`ViteManifestNotFoundException`). Darum wird lokal gebaut und hochgeladen.
+
+Vorher prüfen, dass auf der Konsole PHP 8.3 oder neuer läuft (`php -v`). Manche Hoster bieten
+neuere Versionen nur unter eigenem Namen an, z. B. `php83`. Diesen dann in allen Befehlen unten
+statt `php` verwenden.
+
+### Erstinstallation
+
+Auf dem Server, im Ordner, der den Projektordner enthalten soll:
+
+```sh
+git clone \<git-archive\> \<folder\>  
+cd \<folder\>
+composer install --no-dev --optimize-autoloader
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate --force
+```
+
+In der `.env` mindestens setzen:
+
+```dotenv
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=<https://example.com>
+QUEUE_CONNECTION=sync
+```
+
+Dazu die Mail-Einstellungen, siehe [E-Mail](#e-mail).
+
+Lokal, auf **demselben Commit** wie der Server, bauen und hochladen. Tailwind erzeugt nur die
+Klassen, die in den Blade-Dateien des gebauten Stands vorkommen. Ein Build von einem anderen Stand
+kann deshalb Styles vermissen lassen.
+
+```sh
+git checkout main && git pull
+npm ci
+npm run build
+scp -r public/build <ssh-user>@<host>:<pfad>/\<folder\>/public/
+```
+
+`scp` gibt es unter Windows in PowerShell und Git Bash.
+
+Zurück auf dem Server:
+
+```sh
+php artisan voting:create-admin
+php artisan optimize          # Config, Routen und Views cachen
+```
+
+Im Hosting-Panel die Domain auf den Unterordner **`public/`** zeigen lassen, nicht auf den
+Projektordner. Sonst wären `.env` und die Datenbankdatei über das Web erreichbar.
+
+### Update
+
+Nicht während einer laufenden geheimen Abstimmung, und vorher die Datenbank sichern
+(siehe [Backup](#backup)).
+
+Auf dem Server:
+
+```sh
+php artisan down
+git pull
+composer install --no-dev --optimize-autoloader
+php artisan migrate --force
+```
+
+Lokal auf dem neuen Stand `npm ci && npm run build` ausführen und `public/build` wie oben
+hochladen. Am einfachsten bei jedem Update, nicht nur wenn sich CSS geändert hat, denn auch
+geänderte Blade-Dateien können neue Klassen brauchen. Alte Dateien in `public/build/assets` stören
+nicht, das Manifest verweist nur auf die aktuellen.
+
+Danach auf dem Server:
+
+```sh
+php artisan optimize
+php artisan up
+```
+
+`php artisan optimize` cacht auch die Konfiguration. Nach jeder Änderung an der `.env` muss es
+deshalb erneut laufen, sonst gelten die alten Werte weiter.
+
 ## E-Mail
 
 Mails gehen nur in zwei Fällen raus: Einladung neuer Personen und „Passwort vergessen“ (dieselbe Mail,
@@ -72,9 +160,10 @@ Personenliste, können aber nichts bearbeiten und nur Vertreter:innen einladen.
 1. **Mitglieder** in der Verwaltung unter *Stimmberechtigte → Importieren* hochladen
    (CSV oder XLSX mit Name und Anzahl Mitglieder). Umbenannte Mitglieder lassen sich
    dort einem vorhandenen Eintrag zuordnen. Präsidiumsposten berührt der Import nicht.
-2. **Präsidiumsposten** von Hand unter *Stimmberechtigte → Erstellen* anlegen: Art „Präsidium“,
-   als Name der Posten (z. B. „Präsident:in“), dazu die feste Stimmenzahl. Die Stimmen hängen am
-   Posten; wechselt die Person, wird nur die Zuordnung geändert.
+2. **Präsidiumsposten** sind schon da. Die acht Posten nach § 19 der Satzung legt
+   `php artisan migrate` mit je einer Stimme an. Ändert sich die Satzung, die Posten unter
+   *Stimmberechtigte* anpassen. Die Stimmen hängen am Posten: Wechselt die Person, wird nur die
+   Zuordnung geändert.
 3. **Personen** per Konsole anlegen und den Mitgliedern bzw. Posten zuordnen:
 
    ```sh
@@ -134,5 +223,3 @@ eine Abstimmung fallen.
 `database/database.sqlite` vor jeder Versammlung sichern (siehe oben: nicht während einer geheimen
 Abstimmung), am besten mit `sqlite3 database/database.sqlite ".backup backup.sqlite"`. Dabei
 werden die `-wal`/`-shm`-Dateien automatisch berücksichtigt.
-
-Der alte Plain-PHP-Stand liegt unter `legacy/` und wird nicht deployed.
