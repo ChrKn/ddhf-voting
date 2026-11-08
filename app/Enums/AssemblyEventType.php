@@ -8,6 +8,7 @@ enum AssemblyEventType: string
     case AssemblyClosed = 'assembly_closed';
     case CheckedIn = 'checked_in';
     case CheckedOut = 'checked_out';
+    case VotesCorrected = 'votes_corrected';
     case PollOpened = 'poll_opened';
     case PollClosed = 'poll_closed';
     case PollPublished = 'poll_published';
@@ -20,6 +21,7 @@ enum AssemblyEventType: string
             self::AssemblyClosed => 'Versammlung beendet',
             self::CheckedIn => 'Check-in',
             self::CheckedOut => 'Checkout',
+            self::VotesCorrected => 'Stimmen korrigiert',
             self::PollOpened => 'Abstimmung gestartet',
             self::PollClosed => 'Abstimmung beendet',
             self::PollPublished => 'Ergebnis veröffentlicht',

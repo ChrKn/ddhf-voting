@@ -10,10 +10,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The eight board posts under § 19 of the statutes are created by a migration, one vote each.
 - The admin panel links to the ballot, in a new tab, for people who also represent a member or
   board post.
-- The ballot shows, next to a member's votes, the member count they were calculated from. It is
-  frozen at check-in together with the votes.
+- The ballot and the attendance list show, next to a member's votes, the member count they were
+  calculated from. It is frozen at check-in together with the votes.
+- The assembly chair can correct a wrong member count (or a board post's votes) during the
+  assembly, with a mandatory reason, while no poll is open. The correction updates the master
+  data and the frozen votes; closed polls stay as counted. The minutes list old and new values,
+  the reason and who made the correction.
 
-## 1.0.0 - 2026-08-29
+## 1.0.0 - 2026-11-08
 
 First release, rebuilt on Laravel; replaces the plain-PHP system that was originally meant 
 as a one time throw-away solution during Covid-19.

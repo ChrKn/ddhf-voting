@@ -14,6 +14,8 @@ use App\Services\AssemblyLifecycle;
 use App\Services\PollLifecycle;
 use App\Services\PollResult;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
@@ -105,6 +107,55 @@ class ConductAssembly extends Page
         $this->run(fn () => app(AssemblyLifecycle::class)->checkOut($this->assembly(), $votingMember), "{$votingMember->name} ausgecheckt");
     }
 
+    /**
+     * Korrektur einer falschen Mitgliederzahl bzw. der Stimmen eines Präsidiumspostens
+     * während der Versammlung, mit Begründung fürs Protokoll. Siehe AssemblyLifecycle::correctVotes().
+     */
+    public function correctVotesAction(): Action
+    {
+        $find = fn (array $arguments): VotingMember => VotingMember::findOrFail($arguments['votingMember'] ?? 0);
+
+        return Action::make('correctVotes')
+            ->label('Korrigieren')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->iconButton()
+            ->color('gray')
+            ->size('xs')
+            ->tooltip('Mitgliederzahl bzw. Stimmen korrigieren')
+            ->visible(fn () => $this->user()->can('conduct', $this->assembly()))
+            ->modalHeading(fn (array $arguments) => $find($arguments)->name.': korrigieren')
+            ->modalDescription('Ändert auch die Stammdaten. Bereits beendete Abstimmungen bleiben, wie sie gezählt wurden. Die Korrektur steht mit Begründung im Protokoll.')
+            ->modalSubmitActionLabel('Korrigieren')
+            ->fillForm(function (array $arguments): array {
+                $votingMember = VotingMember::findOrFail($arguments['votingMember'] ?? 0);
+                $attendance = app(AssemblyLifecycle::class)->attendanceOf($this->assembly(), $votingMember);
+
+                return ['value' => $votingMember->isBoardMember()
+                    ? ($attendance !== null ? $attendance->votes : $votingMember->votes)
+                    : ($attendance->member_count ?? $votingMember->member_count)];
+            })
+            ->schema(fn (array $arguments) => [
+                TextInput::make('value')
+                    ->label($find($arguments)->isBoardMember() ? 'Stimmen' : 'Mitgliederzahl')
+                    ->numeric()
+                    ->integer()
+                    ->minValue($find($arguments)->isBoardMember() ? 1 : 0)
+                    ->required(),
+                Textarea::make('reason')
+                    ->label('Begründung')
+                    ->placeholder('z. B. Meldung 2026 übersehen, laut Verein 75 statt 48 Mitglieder')
+                    ->required()
+                    ->maxLength(500),
+            ])
+            ->action(function (array $data, array $arguments) use ($find): void {
+                $votingMember = $find($arguments);
+                $this->run(
+                    fn () => app(AssemblyLifecycle::class)->correctVotes($this->assembly(), $votingMember, (int) $data['value'], (string) $data['reason'], $this->user()),
+                    "{$votingMember->name} korrigiert",
+                );
+            });
+    }
+
     // ------------------------------------------------------------ Abstimmungen
 
     public function selectPoll(int $pollId): void
@@ -170,7 +221,7 @@ class ConductAssembly extends Page
     /**
      * Alle aktiven Vereine (plus eingecheckte inaktive) mit Check-in-Status.
      *
-     * @return Collection<int, array{votingMember: VotingMember, votes: ?int, checked_in_at: ?Carbon}>
+     * @return Collection<int, array{votingMember: VotingMember, votes: ?int, member_count: ?int, checked_in_at: ?Carbon}>
      */
     private function attendance(): Collection
     {
@@ -184,6 +235,7 @@ class ConductAssembly extends Page
             ->map(fn (VotingMember $votingMember) => [
                 'votingMember' => $votingMember,
                 'votes' => $checkedIn->get($votingMember->id)?->attendance->votes,
+                'member_count' => $checkedIn->get($votingMember->id)?->attendance->member_count,
                 'checked_in_at' => $checkedIn->get($votingMember->id)?->attendance->checked_in_at,
             ]);
     }

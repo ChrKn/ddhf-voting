@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AssemblyEventType;
 use App\Enums\PollStatus;
 use App\Models\Assembly;
+use App\Models\AssemblyEvent;
 use App\Services\PollResult;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
@@ -12,7 +14,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * Protokoll einer Versammlung als CSV (Semikolon, UTF-8 mit BOM, damit Excel
  * Umlaute korrekt anzeigt): Anwesenheit, alle durchgeführten Abstimmungen und
- * der Ablauf mit Check-ins/Checkouts und Start/Ende der Abstimmungen.
+ * der Ablauf mit Check-ins/Checkouts, Korrekturen und Start/Ende der Abstimmungen.
  */
 class AssemblyExportController extends Controller
 {
@@ -81,19 +83,37 @@ class AssemblyExportController extends Controller
             $row(['Ablauf']);
             $row(['Zeit', 'Ereignis', 'Stimmberechtigte / Abstimmung', 'Stimmen', 'Durch', 'Hinweis']);
             foreach ($assembly->events()->get() as $event) {
-                $discarded = $event->details['discarded_participations'] ?? null;
-
                 $row([
                     $event->created_at?->format('d.m.Y H:i:s') ?? '',
                     $event->type->label(),
                     $event->subject ?? '',
                     $event->votes ?? '',
                     $event->user_name ?? '',
-                    $discarded === null ? '' : "{$discarded} Stimmabgabe(n) verworfen",
+                    $this->note($event),
                 ]);
             }
 
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /** Spalte „Hinweis“ im Ablauf. */
+    private function note(AssemblyEvent $event): string
+    {
+        if ($event->type === AssemblyEventType::VotesCorrected) {
+            $details = $event->details ?? [];
+            $changes = [];
+
+            if ($event->member_count !== null || ($details['old_member_count'] ?? null) !== null) {
+                $changes[] = 'Mitglieder '.($details['old_member_count'] ?? '?').' → '.($event->member_count ?? '?');
+            }
+            $changes[] = 'Stimmen '.($details['old_votes'] ?? '?').' → '.($event->votes ?? '?');
+
+            return implode(', ', $changes).'. Begründung: '.($details['reason'] ?? '');
+        }
+
+        $discarded = $event->details['discarded_participations'] ?? null;
+
+        return $discarded === null ? '' : "{$discarded} Stimmabgabe(n) verworfen";
     }
 }

@@ -153,7 +153,7 @@
         <div class="lg:col-span-2">
             <x-filament::section>
                 <x-slot name="heading">Anwesenheit</x-slot>
-                <x-slot name="description">Die Stimmen werden beim Check-in eingefroren.</x-slot>
+                <x-slot name="description">Die Stimmen werden beim Check-in eingefroren. Fehler lassen sich mit dem Stift korrigieren, solange keine Abstimmung offen ist.</x-slot>
 
                 <x-filament::input.wrapper class="mb-3">
                     <x-filament::input type="search" wire:model.live.debounce.300ms="votingMemberSearch" placeholder="Stimmberechtigte suchen…" />
@@ -166,13 +166,14 @@
                                 <div class="truncate text-sm font-medium">{{ $row['votingMember']->name }}</div>
                                 <div class="text-xs text-gray-500">
                                     @if ($row['votes'] !== null)
-                                        {{ $row['votes'] }} {{ $row['votes'] === 1 ? 'Stimme' : 'Stimmen' }} · seit {{ $row['checked_in_at']?->format('H:i') }}
+                                        {{ $row['votes'] }} {{ $row['votes'] === 1 ? 'Stimme' : 'Stimmen' }}@if ($row['member_count'] !== null) ({{ $row['member_count'] }} Mitglieder)@endif · seit {{ $row['checked_in_at']?->format('H:i') }}
                                     @else
                                         {{ $row['votingMember']->isBoardMember() ? 'Präsidium' : $row['votingMember']->member_count.' Mitglieder' }} → {{ $row['votingMember']->votes }} {{ $row['votingMember']->votes === 1 ? 'Stimme' : 'Stimmen' }}
                                     @endif
                                 </div>
                             </div>
                             @if ($canConduct)
+                                {{ ($this->correctVotesAction)(['votingMember' => $row['votingMember']->id]) }}
                                 @if ($row['votes'] !== null)
                                     <x-filament::button size="xs" color="success" icon="heroicon-m-check" wire:click="checkOut({{ $row['votingMember']->id }})" wire:confirm="{{ $row['votingMember']->name }} auschecken?">Anwesend</x-filament::button>
                                 @else
