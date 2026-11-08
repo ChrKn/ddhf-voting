@@ -40,6 +40,29 @@ it('weist auf fehlenden Check-in hin', function () {
         ->assertSee('noch nicht eingecheckt');
 });
 
+it('zeigt neben den Stimmen die Mitgliederzahl vom Check-in', function () {
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
+
+    // Spätere Änderungen gelten erst für die nächste Versammlung
+    $this->actingAs(User::factory()->systemAdmin()->create());
+    $this->votingMember->update(['member_count' => 400]);
+    $this->actingAs($this->user);
+
+    Livewire::test(Ballot::class)
+        ->assertSeeInOrder(['MV 2027', '3 Stimmen', '(120 Mitglieder)'])
+        ->assertDontSee('400');
+});
+
+it('zeigt bei Präsidiumsposten keine Mitgliederzahl', function () {
+    $post = VotingMember::firstWhere('name', 'Präsident:in');
+    $this->user->votingMembers()->sync([$post->id]);
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $post);
+
+    Livewire::test(Ballot::class)
+        ->assertSee('1 Stimme')
+        ->assertDontSee('Mitglied');
+});
+
 it('zeigt ohne offene Abstimmung einen Hinweis', function () {
     app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
 

@@ -7,6 +7,7 @@ use App\Enums\AssemblyStatus;
 use App\Enums\PollStatus;
 use App\Exceptions\VotingException;
 use App\Models\Assembly;
+use App\Models\AssemblyVotingMember;
 use App\Models\Poll;
 use App\Models\PollParticipation;
 use App\Models\User;
@@ -26,6 +27,7 @@ use Livewire\Component;
  *
  * @property-read VotingMember|null $votingMember
  * @property-read Assembly|null $assembly
+ * @property-read AssemblyVotingMember|null $attendance
  * @property-read int|null $votes
  * @property-read Poll|null $poll
  * @property-read PollParticipation|null $participation
@@ -137,12 +139,19 @@ class Ballot extends Component
         return $open->first();
     }
 
+    /** Snapshot vom Check-in, null solange nicht eingecheckt. */
+    #[Computed]
+    public function attendance(): ?AssemblyVotingMember
+    {
+        return ($this->assembly && $this->votingMember)
+            ? app(AssemblyLifecycle::class)->attendanceOf($this->assembly, $this->votingMember)
+            : null;
+    }
+
     #[Computed]
     public function votes(): ?int
     {
-        return ($this->assembly && $this->votingMember)
-            ? app(AssemblyLifecycle::class)->votesOf($this->assembly, $this->votingMember)
-            : null;
+        return $this->attendance?->votes;
     }
 
     #[Computed]

@@ -43,10 +43,11 @@ class AssemblyLifecycle
     }
 
     /**
-     * Checkt einen Verein ein und friert seine aktuelle Stimmenzahl ein.
+     * Checkt Stimmberechtigte ein und friert ihre aktuelle Stimmenzahl ein, bei
+     * Mitgliedern zusammen mit der Mitgliederzahl, aus der sie berechnet wurde.
      * Ein erneuter Check-in ändert den Snapshot nicht, auch nicht nach einem
-     * Checkout: Dann gilt die Stimmenzahl vom ersten Check-in dieser
-     * Versammlung, selbst wenn sich die Mitgliederzahl zwischendurch geändert hat.
+     * Checkout: Dann gilt der Snapshot vom ersten Check-in dieser Versammlung,
+     * selbst wenn sich die Mitgliederzahl zwischendurch geändert hat.
      */
     public function checkIn(Assembly $assembly, VotingMember $votingMember): void
     {
@@ -65,16 +66,24 @@ class AssemblyLifecycle
         $firstCheckIn = $assembly->events()
             ->where('type', AssemblyEventType::CheckedIn)
             ->where('voting_member_id', $votingMember->getKey())
-            ->value('votes');
+            ->oldest('id')
+            ->first();
 
-        $votes = $firstCheckIn === null ? $votingMember->votes : (int) $firstCheckIn;
+        if ($firstCheckIn === null) {
+            $votes = $votingMember->votes;
+            $memberCount = $votingMember->isBoardMember() ? null : $votingMember->member_count;
+        } else {
+            $votes = (int) $firstCheckIn->votes;
+            $memberCount = $firstCheckIn->member_count;
+        }
 
-        DB::transaction(function () use ($assembly, $votingMember, $votes) {
+        DB::transaction(function () use ($assembly, $votingMember, $votes, $memberCount) {
             $assembly->votingMembers()->attach($votingMember, [
                 'votes' => $votes,
+                'member_count' => $memberCount,
                 'checked_in_at' => now(),
             ]);
-            $assembly->record(AssemblyEventType::CheckedIn, votingMember: $votingMember, votes: $votes);
+            $assembly->record(AssemblyEventType::CheckedIn, votingMember: $votingMember, votes: $votes, memberCount: $memberCount);
         });
     }
 
@@ -96,14 +105,18 @@ class AssemblyLifecycle
         });
     }
 
-    /** Stimmen-Snapshot eines eingecheckten Vereins (null = nicht eingecheckt). */
+    /** Stimmen-Snapshot eingecheckter Stimmberechtigter (null = nicht eingecheckt). */
     public function votesOf(Assembly $assembly, VotingMember $votingMember): ?int
     {
-        $votes = AssemblyVotingMember::query()
+        return $this->attendanceOf($assembly, $votingMember)?->votes;
+    }
+
+    /** Der ganze Snapshot vom Check-in: Stimmen und Mitgliederzahl (null = nicht eingecheckt). */
+    public function attendanceOf(Assembly $assembly, VotingMember $votingMember): ?AssemblyVotingMember
+    {
+        return AssemblyVotingMember::query()
             ->where('assembly_id', $assembly->getKey())
             ->where('voting_member_id', $votingMember->getKey())
-            ->value('votes');
-
-        return $votes === null ? null : (int) $votes;
+            ->first();
     }
 }

@@ -109,12 +109,14 @@ it('übernimmt beim erneuten Check-in die Stimmenzahl vom ersten Check-in', func
     $this->assemblies->checkIn($this->assembly, $this->votingMember);
 
     expect($this->assemblies->votesOf($this->assembly, $this->votingMember))->toBe(3)
-        ->and($this->assembly->events()->get()->last()->votes)->toBe(3);
+        ->and($this->assemblies->attendanceOf($this->assembly, $this->votingMember)->member_count)->toBe(120)
+        ->and($this->assembly->events()->get()->last())->votes->toBe(3)->member_count->toBe(120);
 
     // In einer neuen Versammlung gilt die aktuelle Mitgliederzahl
     $next = Assembly::factory()->create();
     $this->assemblies->open($next);
     $this->assemblies->checkIn($next, $this->votingMember);
 
-    expect($this->assemblies->votesOf($next, $this->votingMember))->toBe(9);
+    expect($this->assemblies->votesOf($next, $this->votingMember))->toBe(9)
+        ->and($this->assemblies->attendanceOf($next, $this->votingMember)->member_count)->toBe(400);
 });

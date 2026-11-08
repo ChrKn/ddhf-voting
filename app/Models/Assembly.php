@@ -75,6 +75,7 @@ class Assembly extends Model
         ?Poll $poll = null,
         ?int $votes = null,
         ?array $details = null,
+        ?int $memberCount = null,
         ?User $by = null,
     ): AssemblyEvent {
         return $this->events()->create([
@@ -83,6 +84,7 @@ class Assembly extends Model
             'poll_id' => $poll?->getKey(),
             'subject' => $votingMember->name ?? $poll?->title,
             'votes' => $votes,
+            'member_count' => $memberCount,
             'details' => $details,
             'user_id' => $by?->getKey(),
             'user_name' => $by?->name,
@@ -99,7 +101,7 @@ class Assembly extends Model
         return $this->belongsToMany(VotingMember::class)
             ->using(AssemblyVotingMember::class)
             ->as('attendance')
-            ->withPivot(['votes', 'checked_in_at']);
+            ->withPivot(['votes', 'member_count', 'checked_in_at']);
     }
 
     public function isOpen(): bool

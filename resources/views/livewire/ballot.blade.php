@@ -33,6 +33,10 @@
                 <p class="mt-2 text-neutral-600">
                     {{ $this->assembly->title }} ·
                     <strong class="text-neutral-900">{{ $this->votes }} {{ $this->votes === 1 ? 'Stimme' : 'Stimmen' }}</strong>
+                    {{-- Die Mitgliederzahl vom Check-in, aus der die Stimmen berechnet wurden: zum Gegenprüfen --}}
+                    @if ($this->attendance?->member_count !== null)
+                        ({{ $this->attendance->member_count }} {{ $this->attendance->member_count === 1 ? 'Mitglied' : 'Mitglieder' }})
+                    @endif
                 </p>
             @endif
         </section>

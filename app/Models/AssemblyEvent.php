@@ -16,11 +16,12 @@ use LogicException;
  * @property AssemblyEventType $type
  * @property string|null $subject
  * @property int|null $votes
+ * @property int|null $member_count
  * @property array<string, mixed>|null $details
  * @property string|null $user_name
  * @property Carbon|null $created_at
  */
-#[Fillable(['type', 'voting_member_id', 'poll_id', 'subject', 'votes', 'details', 'user_id', 'user_name'])]
+#[Fillable(['type', 'voting_member_id', 'poll_id', 'subject', 'votes', 'member_count', 'details', 'user_id', 'user_name'])]
 class AssemblyEvent extends Model
 {
     public const UPDATED_AT = null;
