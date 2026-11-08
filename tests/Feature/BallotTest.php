@@ -75,6 +75,31 @@ it('führt durch Auswahl, Bestätigung und Abgabe', function () {
         ->and($poll->tallies()->where('poll_option_id', $yes->id)->value('votes'))->toBe(3);
 });
 
+it('lässt Verwalter:innen, die einen Verein vertreten, mit demselben Konto abstimmen', function () {
+    $manager = User::factory()->manager()->forVotingMember($this->votingMember)->create();
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
+    $poll = openPoll($this->assembly);
+    $position = $poll->positions->first();
+    $yes = $position->options->firstWhere('label', 'Dafür');
+
+    $this->actingAs($manager);
+
+    // Dieselbe Sitzung reicht für beides: Verwaltung und Wahlmaske
+    $this->get('/admin')->assertOk();
+    $this->get('/')->assertOk()->assertSeeLivewire(Ballot::class)->assertSee('Verwaltung');
+
+    Livewire::test(Ballot::class)
+        ->set("choices.{$position->id}", $yes->id)
+        ->call('review')
+        ->call('submit')
+        ->assertSee('Fechtschule Nord hat abgestimmt.');
+
+    expect(PollParticipation::firstOrFail())
+        ->user_id->toBe($manager->id)
+        ->voting_member_id->toBe($this->votingMember->id)
+        ->votes->toBe(3);
+});
+
 it('zeigt bei öffentlichen Abstimmungen die eigene Wahl', function () {
     app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
     $poll = openPoll($this->assembly, [], fn ($f) => $f->public());

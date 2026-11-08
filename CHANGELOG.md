@@ -8,6 +8,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 - The eight board posts under § 19 of the statutes are created by a migration, one vote each.
+- The admin panel links to the ballot, in a new tab, for people who also represent a member or
+  board post.
 
 ## 1.0.0 - 2026-08-29
 

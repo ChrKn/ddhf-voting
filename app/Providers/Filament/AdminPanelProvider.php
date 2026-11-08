@@ -8,10 +8,12 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
+use Filament\Navigation\NavigationItem;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -25,6 +27,10 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
  *
  * Bewusst ohne eigenen Panel-Login: Nicht angemeldete Personen landen auf
  * der gemeinsamen Login-Seite (Route "login").
+ *
+ * Wer verwaltet und zugleich ein Mitglied oder einen Präsidiumsposten vertritt, stimmt mit
+ * demselben Konto in der Wahlmaske ab. Der Menüpunkt dorthin öffnet einen neuen Tab, damit
+ * die Versammlungsleitung daneben offen bleibt.
  */
 class AdminPanelProvider extends PanelProvider
 {
@@ -40,6 +46,13 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('2.5rem')
             ->colors([
                 'primary' => Color::hex('#cc1d1b'),
+            ])
+            ->navigationItems([
+                NavigationItem::make('Wahlmaske')
+                    ->url(fn (): string => route('home'), shouldOpenInNewTab: true)
+                    ->icon(Heroicon::OutlinedHandRaised)
+                    ->sort(-1)
+                    ->visible(fn (): bool => auth()->user()?->votingMembers()->exists() ?? false),
             ])
             ->navigationGroups([
                 NavigationGroup::make('Versammlungen'),

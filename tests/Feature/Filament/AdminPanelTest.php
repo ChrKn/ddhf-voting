@@ -40,6 +40,17 @@ describe('Zugang', function () {
         $this->actingAs($this->manager)->get('/admin')->assertOk();
     });
 
+    it('zeigt den Menüpunkt Wahlmaske nur, wenn das Konto jemanden vertritt', function () {
+        $this->actingAs($this->manager)->get('/admin')->assertOk()->assertDontSee('Wahlmaske');
+
+        $this->manager->votingMembers()->attach(VotingMember::factory()->create());
+
+        $this->actingAs($this->manager)->get('/admin')->assertOk()
+            ->assertSee('Wahlmaske')
+            ->assertSee('href="'.route('home').'"', false)
+            ->assertSee('target="_blank"', false);
+    });
+
     it('lässt nur den Systemadmin Personen bearbeiten, Verwalter:innen nur ansehen', function () {
         $person = User::factory()->create();
 
