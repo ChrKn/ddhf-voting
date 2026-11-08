@@ -67,9 +67,9 @@ class UserResource extends Resource
                             ->required()
                             // Eigene Rolle nicht änderbar, damit sich niemand aussperrt
                             ->disabled(fn (?User $record) => $record?->is(auth()->user()) ?? false),
-                        Select::make('clubs')
+                        Select::make('votingMembers')
                             ->label('Vertritt')
-                            ->relationship('clubs', 'name')
+                            ->relationship('votingMembers', 'name')
                             ->multiple()
                             ->searchable()
                             ->preload(),
@@ -93,7 +93,7 @@ class UserResource extends Resource
                 TextColumn::make('role')
                     ->label('Rolle')
                     ->badge(),
-                TextColumn::make('clubs.name')
+                TextColumn::make('votingMembers.name')
                     ->label('Vertritt')
                     ->badge()
                     ->color('gray'),

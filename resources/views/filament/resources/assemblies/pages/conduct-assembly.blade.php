@@ -7,10 +7,10 @@
                 <x-slot name="heading">Status</x-slot>
                 <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
                     <div>Versammlung: <x-filament::badge :color="$assembly->status->getColor()" class="inline-flex">{{ $assembly->status->getLabel() }}</x-filament::badge></div>
-                    <div>Eingecheckt: <strong>{{ $checkedInCount }}</strong> Mitglieder mit <strong>{{ $totalVotes }}</strong> Stimmen</div>
+                    <div>Eingecheckt: <strong>{{ $checkedInCount }}</strong> Stimmberechtigte mit <strong>{{ $totalVotes }}</strong> Stimmen</div>
                 </div>
                 @if ($assembly->status === \App\Enums\AssemblyStatus::Draft)
-                    <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">Mitglieder können schon eingecheckt werden. Abstimmungen lassen sich erst öffnen, wenn die Versammlung eröffnet ist.</p>
+                    <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">Stimmberechtigte können schon eingecheckt werden. Abstimmungen lassen sich erst öffnen, wenn die Versammlung eröffnet ist.</p>
                 @endif
                 @if ($openPollCount > 1)
                     <p class="mt-3 rounded-lg bg-warning-50 p-3 text-sm text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">
@@ -72,14 +72,14 @@
 
                     @if ($poll->status !== \App\Enums\PollStatus::Draft)
                         @php
-                            $clubShare = $progress['clubs_present'] > 0 ? round($progress['clubs_voted'] / $progress['clubs_present'] * 100) : 0;
+                            $votingMemberShare = $progress['voting_members_present'] > 0 ? round($progress['voting_members_voted'] / $progress['voting_members_present'] * 100) : 0;
                         @endphp
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div class="rounded-lg border border-gray-200 p-4 dark:border-white/10">
-                                <div class="text-xs uppercase tracking-wide text-gray-500">Mitglieder</div>
-                                <div class="mt-1 text-2xl font-semibold tabular-nums">{{ $progress['clubs_voted'] }} / {{ $progress['clubs_present'] }}</div>
+                                <div class="text-xs uppercase tracking-wide text-gray-500">Stimmberechtigte</div>
+                                <div class="mt-1 text-2xl font-semibold tabular-nums">{{ $progress['voting_members_voted'] }} / {{ $progress['voting_members_present'] }}</div>
                                 <div class="mt-2 h-2 overflow-hidden rounded bg-gray-100 dark:bg-white/10">
-                                    <div class="h-full bg-primary-600" style="width: {{ $clubShare }}%"></div>
+                                    <div class="h-full bg-primary-600" style="width: {{ $votingMemberShare }}%"></div>
                                 </div>
                             </div>
                             <div class="rounded-lg border border-gray-200 p-4 dark:border-white/10">
@@ -93,13 +93,13 @@
                             <div class="mt-4">
                                 <div class="text-sm font-medium">Noch nicht abgestimmt ({{ $pending->count() }}):</div>
                                 <div class="mt-2 flex flex-wrap gap-1.5">
-                                    @foreach ($pending as $club)
-                                        <x-filament::badge color="gray">{{ $club->name }}</x-filament::badge>
+                                    @foreach ($pending as $votingMember)
+                                        <x-filament::badge color="gray">{{ $votingMember->name }}</x-filament::badge>
                                     @endforeach
                                 </div>
                             </div>
-                        @elseif ($progress['clubs_present'] > 0)
-                            <p class="mt-4 text-sm font-semibold text-success-600">Alle eingecheckten Mitglieder haben abgestimmt.</p>
+                        @elseif ($progress['voting_members_present'] > 0)
+                            <p class="mt-4 text-sm font-semibold text-success-600">Alle eingecheckten Stimmberechtigten haben abgestimmt.</p>
                         @endif
                     @else
                         <p class="text-sm text-gray-600 dark:text-gray-400">Noch nicht geöffnet.</p>
@@ -123,7 +123,7 @@
                                 <table class="w-full text-left text-sm">
                                     <thead>
                                         <tr class="border-b border-gray-200 dark:border-white/10">
-                                            <th class="py-2 pr-4">Mitglied</th>
+                                            <th class="py-2 pr-4">Stimmberechtigte</th>
                                             <th class="py-2 pr-4">Stimmen</th>
                                             <th class="py-2">Abgestimmt mit</th>
                                         </tr>
@@ -131,7 +131,7 @@
                                     <tbody>
                                         @foreach ($details as $row)
                                             <tr class="border-b border-gray-100 align-top dark:border-white/5">
-                                                <td class="py-2 pr-4">{{ $row['club'] }}</td>
+                                                <td class="py-2 pr-4">{{ $row['votingMember'] }}</td>
                                                 <td class="py-2 pr-4 tabular-nums">{{ $row['votes'] }}</td>
                                                 <td class="py-2">
                                                     @foreach ($row['choices'] as $position => $label)
@@ -156,34 +156,34 @@
                 <x-slot name="description">Die Stimmen werden beim Check-in eingefroren.</x-slot>
 
                 <x-filament::input.wrapper class="mb-3">
-                    <x-filament::input type="search" wire:model.live.debounce.300ms="clubSearch" placeholder="Mitglied suchen…" />
+                    <x-filament::input type="search" wire:model.live.debounce.300ms="votingMemberSearch" placeholder="Stimmberechtigte suchen…" />
                 </x-filament::input.wrapper>
 
                 <ul class="divide-y divide-gray-200 dark:divide-white/10">
                     @forelse ($attendance as $row)
-                        <li wire:key="club-{{ $row['club']->id }}" class="flex items-center gap-3 py-2">
+                        <li wire:key="votingMember-{{ $row['votingMember']->id }}" class="flex items-center gap-3 py-2">
                             <div class="min-w-0 flex-1">
-                                <div class="truncate text-sm font-medium">{{ $row['club']->name }}</div>
+                                <div class="truncate text-sm font-medium">{{ $row['votingMember']->name }}</div>
                                 <div class="text-xs text-gray-500">
                                     @if ($row['votes'] !== null)
                                         {{ $row['votes'] }} {{ $row['votes'] === 1 ? 'Stimme' : 'Stimmen' }} · seit {{ $row['checked_in_at']?->format('H:i') }}
                                     @else
-                                        {{ $row['club']->member_count }} Mitglieder → {{ $row['club']->votes }} {{ $row['club']->votes === 1 ? 'Stimme' : 'Stimmen' }}
+                                        {{ $row['votingMember']->isBoardMember() ? 'Präsidium' : $row['votingMember']->member_count.' Mitglieder' }} → {{ $row['votingMember']->votes }} {{ $row['votingMember']->votes === 1 ? 'Stimme' : 'Stimmen' }}
                                     @endif
                                 </div>
                             </div>
                             @if ($canConduct)
                                 @if ($row['votes'] !== null)
-                                    <x-filament::button size="xs" color="success" icon="heroicon-m-check" wire:click="checkOut({{ $row['club']->id }})" wire:confirm="{{ $row['club']->name }} auschecken?">Anwesend</x-filament::button>
+                                    <x-filament::button size="xs" color="success" icon="heroicon-m-check" wire:click="checkOut({{ $row['votingMember']->id }})" wire:confirm="{{ $row['votingMember']->name }} auschecken?">Anwesend</x-filament::button>
                                 @else
-                                    <x-filament::button size="xs" color="gray" wire:click="checkIn({{ $row['club']->id }})">Einchecken</x-filament::button>
+                                    <x-filament::button size="xs" color="gray" wire:click="checkIn({{ $row['votingMember']->id }})">Einchecken</x-filament::button>
                                 @endif
                             @elseif ($row['votes'] !== null)
                                 <x-filament::badge color="success">Anwesend</x-filament::badge>
                             @endif
                         </li>
                     @empty
-                        <li class="py-2 text-sm text-gray-500">Keine Mitglieder gefunden.</li>
+                        <li class="py-2 text-sm text-gray-500">Keine Stimmberechtigten gefunden.</li>
                     @endforelse
                 </ul>
             </x-filament::section>

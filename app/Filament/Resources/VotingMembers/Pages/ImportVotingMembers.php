@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Filament\Resources\Clubs\Pages;
+namespace App\Filament\Resources\VotingMembers\Pages;
 
 use App\Exceptions\VotingException;
-use App\Filament\Resources\Clubs\ClubResource;
-use App\Models\Club;
+use App\Filament\Resources\VotingMembers\VotingMemberResource;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\MemberImport;
 use App\Services\VoteWeightCalculator;
 use Filament\Notifications\Notification;
@@ -19,13 +19,13 @@ use Livewire\WithFileUploads;
  * (gedacht für einige hundert Zeilen). Nur für den Systemadmin, weil dabei
  * Mitgliederzahlen geändert werden.
  */
-class ImportClubs extends Page
+class ImportVotingMembers extends Page
 {
     use WithFileUploads;
 
-    protected static string $resource = ClubResource::class;
+    protected static string $resource = VotingMemberResource::class;
 
-    protected string $view = 'filament.resources.clubs.pages.import-clubs';
+    protected string $view = 'filament.resources.voting-members.pages.import-voting-members';
 
     protected static ?string $title = 'Mitglieder importieren';
 
@@ -54,8 +54,8 @@ class ImportClubs extends Page
         $user = auth()->user();
 
         return $user instanceof User
-            && $user->can('create', Club::class)
-            && $user->can('updateMemberCount', Club::class);
+            && $user->can('create', VotingMember::class)
+            && $user->can('updateVotes', VotingMember::class);
     }
 
     public function updatedUpload(): void
@@ -141,15 +141,15 @@ class ImportClubs extends Page
      */
     protected function getViewData(): array
     {
-        $clubs = Club::query()->orderBy('name')->get(['id', 'name', 'member_count', 'active'])->keyBy('id');
+        $votingMembers = VotingMember::query()->members()->orderBy('name')->get(['id', 'name', 'member_count', 'active'])->keyBy('id');
         $targeted = collect($this->rows)->pluck('target')->filter(fn ($t) => is_numeric($t))->map(fn ($t) => (int) $t);
 
         return [
-            'clubs' => $clubs,
+            'votingMembers' => $votingMembers,
             'calculator' => app(VoteWeightCalculator::class),
             'columns' => $this->columnOptions(),
-            'stats' => $this->stats($clubs),
-            'missing' => $clubs->where('active', true)->except($targeted->all())->values(),
+            'stats' => $this->stats($votingMembers),
+            'missing' => $votingMembers->where('active', true)->except($targeted->all())->values(),
         ];
     }
 
@@ -171,10 +171,10 @@ class ImportClubs extends Page
     }
 
     /**
-     * @param  Collection<int, Club>  $clubs
+     * @param  Collection<int, VotingMember>  $votingMembers
      * @return array{new: int, update: int, unchanged: int, skip: int}
      */
-    private function stats(Collection $clubs): array
+    private function stats(Collection $votingMembers): array
     {
         $stats = ['new' => 0, 'update' => 0, 'unchanged' => 0, 'skip' => 0];
 
@@ -184,10 +184,10 @@ class ImportClubs extends Page
             } elseif ($row['target'] === MemberImport::NEW) {
                 $stats['new']++;
             } else {
-                $club = $clubs->get((int) $row['target']);
-                $changed = $club === null
-                    || $club->member_count !== $row['count']
-                    || ($row['rename'] && $club->name !== $row['name']);
+                $votingMember = $votingMembers->get((int) $row['target']);
+                $changed = $votingMember === null
+                    || $votingMember->member_count !== $row['count']
+                    || ($row['rename'] && $votingMember->name !== $row['name']);
                 $stats[$changed ? 'update' : 'unchanged']++;
             }
         }

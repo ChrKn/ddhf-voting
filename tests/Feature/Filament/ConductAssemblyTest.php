@@ -6,15 +6,15 @@ use App\Enums\PollStatus;
 use App\Filament\Resources\Assemblies\AssemblyResource;
 use App\Filament\Resources\Assemblies\Pages\ConductAssembly;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\User;
+use App\Models\VotingMember;
 use Livewire\Livewire;
 
 beforeEach(function () {
     $this->manager = User::factory()->manager()->create();
-    $this->nord = Club::factory()->members(120)->create(['name' => 'Nord']);
-    $this->sued = Club::factory()->members(10)->create(['name' => 'Süd']);
+    $this->nord = VotingMember::factory()->members(120)->create(['name' => 'Nord']);
+    $this->sued = VotingMember::factory()->members(10)->create(['name' => 'Süd']);
     $this->assembly = Assembly::factory()->create(['title' => 'MV 2027']);
     $this->poll = Poll::factory()->create(['assembly_id' => $this->assembly->id, 'title' => 'Antrag A']);
 
@@ -39,7 +39,7 @@ it('steuert eine komplette Versammlung', function () {
         ->callAction('openAssembly')
         ->call('checkIn', $this->nord->id)
         ->call('checkIn', $this->sued->id)
-        ->assertSeeText('Eingecheckt: 2 Mitglieder mit 4 Stimmen');
+        ->assertSeeText('Eingecheckt: 2 Stimmberechtigte mit 4 Stimmen');
 
     expect($this->assembly->fresh()->status)->toBe(AssemblyStatus::Open);
 
@@ -47,7 +47,7 @@ it('steuert eine komplette Versammlung', function () {
         ->assertSee('0 / 2')
         ->assertSee('Das Ergebnis wird erst nach dem Schließen angezeigt.');
 
-    $rep = User::factory()->forClub($this->nord)->create();
+    $rep = User::factory()->forVotingMember($this->nord)->create();
     $position = $this->poll->positions()->first();
     app(CastVote::class)->handle($rep, $this->nord, $this->poll, [
         $position->id => $position->options()->where('label', 'Dafür')->value('id'),
@@ -89,7 +89,7 @@ it('checkt aus und setzt Abstimmungen zurück', function () {
         ->call('openPoll', $this->poll->id)
         ->call('resetPoll', $this->poll->id);
 
-    expect($this->assembly->clubs()->count())->toBe(0)
+    expect($this->assembly->votingMembers()->count())->toBe(0)
         ->and($this->poll->fresh()->status)->toBe(PollStatus::Draft);
 });
 
@@ -100,7 +100,7 @@ it('lässt in beendeten Versammlungen nichts mehr ändern', function () {
         ->call('checkIn', $this->nord->id)
         ->assertNotified('Keine Berechtigung oder Versammlung beendet.');
 
-    expect($this->assembly->clubs()->count())->toBe(0);
+    expect($this->assembly->votingMembers()->count())->toBe(0);
 });
 
 it('ignoriert Abstimmungen anderer Versammlungen', function () {

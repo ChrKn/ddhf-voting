@@ -71,7 +71,7 @@ class Assembly extends Model
      */
     public function record(
         AssemblyEventType $type,
-        ?Club $club = null,
+        ?VotingMember $votingMember = null,
         ?Poll $poll = null,
         ?int $votes = null,
         ?array $details = null,
@@ -79,9 +79,9 @@ class Assembly extends Model
     ): AssemblyEvent {
         return $this->events()->create([
             'type' => $type,
-            'club_id' => $club?->getKey(),
+            'voting_member_id' => $votingMember?->getKey(),
             'poll_id' => $poll?->getKey(),
-            'subject' => $club->name ?? $poll?->title,
+            'subject' => $votingMember->name ?? $poll?->title,
             'votes' => $votes,
             'details' => $details,
             'user_id' => $by?->getKey(),
@@ -92,12 +92,12 @@ class Assembly extends Model
     /**
      * Eingecheckte Vereine mit Stimmen-Snapshot.
      *
-     * @return BelongsToMany<Club, $this, AssemblyClub, 'attendance'>
+     * @return BelongsToMany<VotingMember, $this, AssemblyVotingMember, 'attendance'>
      */
-    public function clubs(): BelongsToMany
+    public function votingMembers(): BelongsToMany
     {
-        return $this->belongsToMany(Club::class)
-            ->using(AssemblyClub::class)
+        return $this->belongsToMany(VotingMember::class)
+            ->using(AssemblyVotingMember::class)
             ->as('attendance')
             ->withPivot(['votes', 'checked_in_at']);
     }
@@ -107,13 +107,13 @@ class Assembly extends Model
         return $this->status === AssemblyStatus::Open;
     }
 
-    public function hasCheckedIn(Club $club): bool
+    public function hasCheckedIn(VotingMember $votingMember): bool
     {
-        return $this->clubs()->whereKey($club->getKey())->exists();
+        return $this->votingMembers()->whereKey($votingMember->getKey())->exists();
     }
 
     public function totalVotes(): int
     {
-        return (int) $this->clubs()->sum('assembly_club.votes');
+        return (int) $this->votingMembers()->sum('assembly_voting_member.votes');
     }
 }

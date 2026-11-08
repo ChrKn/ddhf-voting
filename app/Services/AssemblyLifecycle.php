@@ -7,8 +7,8 @@ use App\Enums\AssemblyStatus;
 use App\Enums\PollStatus;
 use App\Exceptions\VotingException;
 use App\Models\Assembly;
-use App\Models\AssemblyClub;
-use App\Models\Club;
+use App\Models\AssemblyVotingMember;
+use App\Models\VotingMember;
 use Illuminate\Support\Facades\DB;
 
 /** Versammlung öffnen/schließen und Anwesenheit (Check-in) der Vereine. */
@@ -48,60 +48,60 @@ class AssemblyLifecycle
      * Checkout: Dann gilt die Stimmenzahl vom ersten Check-in dieser
      * Versammlung, selbst wenn sich die Mitgliederzahl zwischendurch geändert hat.
      */
-    public function checkIn(Assembly $assembly, Club $club): void
+    public function checkIn(Assembly $assembly, VotingMember $votingMember): void
     {
         if ($assembly->status === AssemblyStatus::Closed) {
             throw new VotingException('Die Versammlung ist beendet.');
         }
 
-        if (! $club->active) {
-            throw new VotingException("{$club->name} ist inaktiv und kann nicht eingecheckt werden.");
+        if (! $votingMember->active) {
+            throw new VotingException("{$votingMember->name} ist inaktiv und kann nicht eingecheckt werden.");
         }
 
-        if ($assembly->hasCheckedIn($club)) {
+        if ($assembly->hasCheckedIn($votingMember)) {
             return;
         }
 
         $firstCheckIn = $assembly->events()
             ->where('type', AssemblyEventType::CheckedIn)
-            ->where('club_id', $club->getKey())
+            ->where('voting_member_id', $votingMember->getKey())
             ->value('votes');
 
-        $votes = $firstCheckIn === null ? $club->votes : (int) $firstCheckIn;
+        $votes = $firstCheckIn === null ? $votingMember->votes : (int) $firstCheckIn;
 
-        DB::transaction(function () use ($assembly, $club, $votes) {
-            $assembly->clubs()->attach($club, [
+        DB::transaction(function () use ($assembly, $votingMember, $votes) {
+            $assembly->votingMembers()->attach($votingMember, [
                 'votes' => $votes,
                 'checked_in_at' => now(),
             ]);
-            $assembly->record(AssemblyEventType::CheckedIn, club: $club, votes: $votes);
+            $assembly->record(AssemblyEventType::CheckedIn, votingMember: $votingMember, votes: $votes);
         });
     }
 
-    public function checkOut(Assembly $assembly, Club $club): void
+    public function checkOut(Assembly $assembly, VotingMember $votingMember): void
     {
         if ($assembly->status === AssemblyStatus::Closed) {
             throw new VotingException('Die Versammlung ist beendet.');
         }
 
-        $votes = $this->votesOf($assembly, $club);
+        $votes = $this->votesOf($assembly, $votingMember);
 
         if ($votes === null) {
             return;
         }
 
-        DB::transaction(function () use ($assembly, $club, $votes) {
-            $assembly->clubs()->detach($club);
-            $assembly->record(AssemblyEventType::CheckedOut, club: $club, votes: $votes);
+        DB::transaction(function () use ($assembly, $votingMember, $votes) {
+            $assembly->votingMembers()->detach($votingMember);
+            $assembly->record(AssemblyEventType::CheckedOut, votingMember: $votingMember, votes: $votes);
         });
     }
 
     /** Stimmen-Snapshot eines eingecheckten Vereins (null = nicht eingecheckt). */
-    public function votesOf(Assembly $assembly, Club $club): ?int
+    public function votesOf(Assembly $assembly, VotingMember $votingMember): ?int
     {
-        $votes = AssemblyClub::query()
+        $votes = AssemblyVotingMember::query()
             ->where('assembly_id', $assembly->getKey())
-            ->where('club_id', $club->getKey())
+            ->where('voting_member_id', $votingMember->getKey())
             ->value('votes');
 
         return $votes === null ? null : (int) $votes;

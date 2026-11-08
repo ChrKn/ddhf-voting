@@ -3,24 +3,24 @@
 use App\Enums\AssemblyStatus;
 use App\Enums\PollStatus;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\User;
+use App\Models\VotingMember;
 
 beforeEach(function () {
     $this->admin = User::factory()->systemAdmin()->create();
     $this->manager = User::factory()->manager()->create();
-    $this->club = Club::factory()->create();
-    $this->member = User::factory()->forClub($this->club)->create();
+    $this->votingMember = VotingMember::factory()->create();
+    $this->member = User::factory()->forVotingMember($this->votingMember)->create();
 });
 
 it('erlaubt nur dem Systemadmin, die Mitgliederzahl zu ändern', function () {
-    expect($this->admin->can('updateMemberCount', $this->club))->toBeTrue()
-        ->and($this->manager->can('updateMemberCount', $this->club))->toBeFalse()
-        ->and($this->member->can('updateMemberCount', $this->club))->toBeFalse()
-        ->and($this->manager->can('update', $this->club))->toBeFalse()
-        ->and($this->manager->can('viewAny', Club::class))->toBeTrue()
-        ->and($this->member->can('viewAny', Club::class))->toBeFalse();
+    expect($this->admin->can('updateVotes', $this->votingMember))->toBeTrue()
+        ->and($this->manager->can('updateVotes', $this->votingMember))->toBeFalse()
+        ->and($this->member->can('updateVotes', $this->votingMember))->toBeFalse()
+        ->and($this->manager->can('update', $this->votingMember))->toBeFalse()
+        ->and($this->manager->can('viewAny', VotingMember::class))->toBeTrue()
+        ->and($this->member->can('viewAny', VotingMember::class))->toBeFalse();
 });
 
 it('erlaubt nur dem Systemadmin, Personen zu verwalten', function () {

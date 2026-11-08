@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\VotingException;
-use App\Models\Club;
+use App\Models\VotingMember;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -78,8 +78,9 @@ class MemberImport
      */
     public function rows(array $rows, int $nameColumn, int $countColumn, bool $hasHeader): array
     {
-        $clubs = Club::query()->orderBy('name')->get(['id', 'name']);
-        $byName = $clubs->keyBy(fn (Club $c) => Club::normalizeName($c->name));
+        // Nur Mitglieder: Präsidiumsposten haben keine Mitgliederzahl und sind kein Zuordnungsziel.
+        $votingMembers = VotingMember::query()->members()->orderBy('name')->get(['id', 'name']);
+        $byName = $votingMembers->keyBy(fn (VotingMember $c) => VotingMember::normalizeName($c->name));
         $result = [];
 
         foreach ($rows as $index => $row) {
@@ -97,7 +98,7 @@ class MemberImport
                 default => null,
             };
 
-            $match = $byName->get(Club::normalizeName($name));
+            $match = $byName->get(VotingMember::normalizeName($name));
 
             $result[] = [
                 'line' => $index + 1,
@@ -107,7 +108,7 @@ class MemberImport
                 'target' => $error !== null ? self::SKIP : ($match ? (string) $match->id : self::NEW),
                 // Bei abweichender Schreibweise eines Treffers den Namen übernehmen
                 'rename' => true,
-                'similar' => ($match === null && $error === null) ? $this->similar($name, $clubs) : null,
+                'similar' => ($match === null && $error === null) ? $this->similar($name, $votingMembers) : null,
             ];
         }
 
@@ -139,32 +140,32 @@ class MemberImport
 
             // Umbenennungen in zwei Phasen, damit Namenstausche nicht zwischendurch
             // am Unique-Index scheitern (A → B, während B noch so heißt).
-            $clubs = Club::query()->findMany(array_map(fn ($r) => (int) $r['target'], $updates))->keyBy('id');
+            $votingMembers = VotingMember::query()->members()->findMany(array_map(fn ($r) => (int) $r['target'], $updates))->keyBy('id');
             $renames = [];
             foreach ($updates as $row) {
-                $club = $clubs[(int) $row['target']];
-                if ($row['rename'] && $club->name !== $row['name']) {
-                    $renames[$club->id] = $row['name'];
-                    $club->forceFill(['name' => "__import_{$club->id}_".Str::random(8)])->saveQuietly();
+                $votingMember = $votingMembers[(int) $row['target']];
+                if ($row['rename'] && $votingMember->name !== $row['name']) {
+                    $renames[$votingMember->id] = $row['name'];
+                    $votingMember->forceFill(['name' => "__import_{$votingMember->id}_".Str::random(8)])->saveQuietly();
                 }
             }
 
             foreach ($updates as $row) {
-                $club = $clubs[(int) $row['target']];
-                $club->member_count = (int) $row['count'];
-                if (isset($renames[$club->id])) {
-                    $club->name = $renames[$club->id];
+                $votingMember = $votingMembers[(int) $row['target']];
+                $votingMember->member_count = (int) $row['count'];
+                if (isset($renames[$votingMember->id])) {
+                    $votingMember->name = $renames[$votingMember->id];
                 }
 
-                if (! isset($renames[$club->id]) && ! $club->isDirty()) {
+                if (! isset($renames[$votingMember->id]) && ! $votingMember->isDirty()) {
                     $summary['unchanged']++;
 
                     continue;
                 }
 
-                $club->save();
+                $votingMember->save();
                 $summary['updated']++;
-                $summary['renamed'] += isset($renames[$club->id]) ? 1 : 0;
+                $summary['renamed'] += isset($renames[$votingMember->id]) ? 1 : 0;
             }
 
             // Neue Mitglieder zuletzt: so kann ein neuer Eintrag den alten Namen
@@ -172,7 +173,7 @@ class MemberImport
 
             foreach ($rows as $row) {
                 if ($row['target'] === self::NEW && $row['error'] === null) {
-                    Club::create(['name' => $row['name'], 'member_count' => $row['count']]);
+                    VotingMember::create(['name' => $row['name'], 'member_count' => $row['count']]);
                     $summary['created']++;
                 }
             }
@@ -188,7 +189,7 @@ class MemberImport
     {
         $problems = [];
         $active = array_filter($rows, fn ($r) => $r['target'] !== self::SKIP && $r['error'] === null);
-        $existing = Club::query()->pluck('name', 'id');
+        $existing = VotingMember::query()->members()->pluck('name', 'id');
 
         foreach ($active as $row) {
             if (trim($row['name']) === '' || ! is_int($row['count']) || $row['count'] < 0) {
@@ -208,8 +209,8 @@ class MemberImport
             $problems[] = '„'.$existing[(int) $id].'“ ist mehreren Zeilen zugeordnet (Zeilen '.$group->pluck('line')->implode(', ').').';
         }
 
-        // Endgültige Namen müssen eindeutig sein
-        $final = $existing->all();
+        // Endgültige Namen müssen eindeutig sein, auch gegenüber den Präsidiumsposten
+        $final = VotingMember::query()->pluck('name', 'id')->all();
         $newNames = [];
         foreach ($active as $row) {
             if ($row['target'] === self::NEW) {
@@ -219,16 +220,16 @@ class MemberImport
             }
         }
 
-        $taken = collect($final)->countBy(fn ($name) => Club::normalizeName($name));
+        $taken = collect($final)->countBy(fn ($name) => VotingMember::normalizeName($name));
         foreach ($newNames as $row) {
-            $key = Club::normalizeName($row['name']);
+            $key = VotingMember::normalizeName($row['name']);
             if (($taken[$key] ?? 0) > 0) {
                 $problems[] = "Zeile {$row['line']}: „{$row['name']}“ gibt es schon. Bitte dem vorhandenen Mitglied zuordnen oder überspringen.";
             }
             $taken[$key] = ($taken[$key] ?? 0) + 1;
         }
         foreach ($taken->filter(fn ($n) => $n > 1) as $key => $n) {
-            $names = collect($final)->filter(fn ($name) => Club::normalizeName($name) === $key);
+            $names = collect($final)->filter(fn ($name) => VotingMember::normalizeName($name) === $key);
             if ($names->count() > 1) {
                 $problems[] = 'Nach dem Umbenennen gäbe es „'.$names->first().'“ mehrfach.';
             }
@@ -254,18 +255,18 @@ class MemberImport
     /**
      * Ähnlichster vorhandener Name als Hinweis bei möglichen Umbenennungen.
      *
-     * @param  Collection<int, Club>  $clubs
+     * @param  Collection<int, VotingMember>  $votingMembers
      */
-    private function similar(string $name, Collection $clubs): ?string
+    private function similar(string $name, Collection $votingMembers): ?string
     {
         $best = null;
         $bestScore = 0.0;
 
-        foreach ($clubs as $club) {
-            similar_text(Club::normalizeName($name), Club::normalizeName($club->name), $percent);
+        foreach ($votingMembers as $votingMember) {
+            similar_text(VotingMember::normalizeName($name), VotingMember::normalizeName($votingMember->name), $percent);
             if ($percent > $bestScore) {
                 $bestScore = $percent;
-                $best = $club->name;
+                $best = $votingMember->name;
             }
         }
 

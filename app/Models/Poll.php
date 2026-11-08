@@ -19,7 +19,7 @@ use Illuminate\Support\Carbon;
  * @property PollStatus $status
  * @property Carbon|null $opened_at
  * @property Carbon|null $closed_at
- * @property int|null $clubs_present Anwesende Mitglieder beim Beenden
+ * @property int|null $voting_members_present Anwesende Mitglieder beim Beenden
  * @property int|null $votes_present Anwesende Stimmen beim Beenden
  */
 #[Fillable(['assembly_id', 'title', 'description', 'type', 'mode', 'sort'])]
@@ -45,7 +45,7 @@ class Poll extends Model
             'status' => PollStatus::class,
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
-            'clubs_present' => 'integer',
+            'voting_members_present' => 'integer',
             'votes_present' => 'integer',
             'sort' => 'integer',
         ];
@@ -93,8 +93,8 @@ class Poll extends Model
         return $this->mode === PollMode::Public;
     }
 
-    public function hasVoted(Club $club): bool
+    public function hasVoted(VotingMember $votingMember): bool
     {
-        return $this->participations()->where('club_id', $club->getKey())->exists();
+        return $this->participations()->where('voting_member_id', $votingMember->getKey())->exists();
     }
 }

@@ -4,7 +4,7 @@ Notable changes to the DDHF MV Abstimmungssystem.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.0.0 - 2026-08-29
 
 First release, rebuilt on Laravel; replaces the plain-PHP system that was originally meant 
 as a one time throw-away solution during Covid-19.
@@ -20,12 +20,14 @@ as a one time throw-away solution during Covid-19.
   member counts and people; managers conduct assemblies.
 - `php artisan voting:create-admin` replaces the old first-run setup.
 
-### Members
-- A member's votes are `floor(members / 50) + 1`, configurable in `config/voting.php`.
+### Voting members
+- Members and board posts vote. A member's votes are `floor(members / 50) + 1`, configurable in
+  `config/voting.php`; a board post has a fixed number of votes that belongs to the post, not to
+  the person holding it.
 - Member import from CSV or XLSX: columns are guessed and can be changed, rows are matched by
   name and can be remapped, created or skipped, with a preview of the changed votes and a list of
-  members missing from the file.
-- `php artisan voting:import-people` creates representatives and maps them to members, with
+  members missing from the file. Board posts are left alone.
+- `php artisan voting:import-people` creates representatives and maps them to members or board posts, with
   `--dry-run`, `--skip-invalid`, `--force` and `--invite`.
 
 ### Polls and ballot

@@ -1,8 +1,8 @@
 <?php
 
 use App\Enums\Role;
-use App\Models\Club;
 use App\Models\User;
+use App\Models\VotingMember;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
 use OpenSpout\Common\Entity\Row;
@@ -17,8 +17,8 @@ function peopleCsv(string $content): string
 }
 
 beforeEach(function () {
-    $this->nord = Club::factory()->create(['name' => 'Fechtschule Nord']);
-    $this->sued = Club::factory()->create(['name' => 'Schwertkampf Süd e.V.']);
+    $this->nord = VotingMember::factory()->create(['name' => 'Fechtschule Nord']);
+    $this->sued = VotingMember::factory()->create(['name' => 'Schwertkampf Süd e.V.']);
 });
 
 it('legt Personen an und ordnet sie zu, auch mehreren Mitgliedern', function () {
@@ -34,7 +34,7 @@ it('legt Personen an und ordnet sie zu, auch mehreren Mitgliedern', function () 
     $anna = User::firstWhere('email', 'anna@example.com');
     expect(User::count())->toBe(2)
         ->and($anna->role)->toBe(Role::Member)
-        ->and($anna->clubs->pluck('name')->sort()->values()->all())->toBe(['Fechtschule Nord', 'Schwertkampf Süd e.V.'])
+        ->and($anna->votingMembers->pluck('name')->sort()->values()->all())->toBe(['Fechtschule Nord', 'Schwertkampf Süd e.V.'])
         ->and($anna->email_verified_at)->toBeNull();
 });
 
@@ -44,6 +44,17 @@ it('akzeptiert Spalten in beliebiger Reihenfolge und „Verein“ statt „Mitgl
     $this->artisan('voting:import-people', ['file' => $file, '--force' => true])->assertSuccessful();
 
     expect(User::firstWhere('email', 'cem@example.com')->represents($this->nord))->toBeTrue();
+});
+
+it('ordnet Personen auch Präsidiumsposten zu, Spalte „Posten“', function () {
+    $post = VotingMember::factory()->boardMember(2, 'Präsident:in')->create();
+    $file = peopleCsv('Posten;E-Mail;Name
+Präsident:in;praesi@example.com;Pia Präsi
+');
+
+    $this->artisan('voting:import-people', ['file' => $file, '--force' => true])->assertSuccessful();
+
+    expect(User::firstWhere('email', 'praesi@example.com')->represents($post))->toBeTrue();
 });
 
 it('liest Excel-Dateien', function () {

@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Enums\Role;
 use App\Exceptions\VotingException;
-use App\Models\Club;
 use App\Models\User;
+use App\Models\VotingMember;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -15,12 +15,13 @@ use Illuminate\Support\Str;
  * Erwartet eine Kopfzeile mit den Spalten „Mitglied“ (oder „Verein“),
  * „E-Mail“ und „Name“. Die Mitglieder müssen bereits existieren. Eine Person
  * kann in mehreren Zeilen stehen und vertritt dann mehrere Mitglieder.
+ * Präsidiumsposten werden genauso über ihren Namen gefunden (z. B. „Präsident:in“).
  * Vorhandene Personen (gleiche E-Mail) werden nur zugeordnet, nicht geändert.
  */
 class PeopleImport
 {
     public const COLUMNS = [
-        'club' => ['mitglied', 'verein', 'mitgliedsname', 'vereinsname'],
+        'votingMember' => ['mitglied', 'verein', 'mitgliedsname', 'vereinsname', 'stimmberechtigte', 'posten'],
         'email' => ['e-mail', 'email', 'mail', 'e-mail-adresse'],
         'name' => ['name', 'person'],
     ];
@@ -28,15 +29,15 @@ class PeopleImport
     /**
      * @param  list<list<string>>  $rows  inklusive Kopfzeile
      * @return array{
-     *     entries: list<array{line: int, club_id: int, club: string, email: string, name: string, action: 'create'|'attach'|'exists'}>,
+     *     entries: list<array{line: int, voting_member_id: int, votingMember: string, email: string, name: string, action: 'create'|'attach'|'exists'}>,
      *     errors: list<array{line: int, message: string}>
      * }
      */
     public function plan(array $rows): array
     {
         $columns = $this->columns($rows[0] ?? []);
-        $clubs = Club::query()->get(['id', 'name'])->keyBy(fn (Club $c) => Club::normalizeName($c->name));
-        $users = User::query()->with('clubs:id')->get()->keyBy(fn (User $u) => Str::lower($u->email));
+        $votingMembers = VotingMember::query()->get(['id', 'name'])->keyBy(fn (VotingMember $c) => VotingMember::normalizeName($c->name));
+        $users = User::query()->with('votingMembers:id')->get()->keyBy(fn (User $u) => Str::lower($u->email));
 
         $entries = [];
         $errors = [];
@@ -45,16 +46,16 @@ class PeopleImport
 
         foreach (array_slice($rows, 1) as $i => $row) {
             $line = $i + 2;
-            $clubName = trim($row[$columns['club']] ?? '');
+            $votingMemberName = trim($row[$columns['votingMember']] ?? '');
             $email = Str::lower(trim($row[$columns['email']] ?? ''));
             $name = trim(preg_replace('/\s+/u', ' ', $row[$columns['name']] ?? '') ?? '');
 
-            $club = $clubs->get(Club::normalizeName($clubName));
+            $votingMember = $votingMembers->get(VotingMember::normalizeName($votingMemberName));
             $user = $users->get($email);
 
             $error = match (true) {
-                $clubName === '' => 'Mitglied fehlt',
-                $club === null => "Mitglied „{$clubName}“ gibt es nicht".$this->hint($clubName, $clubs->pluck('name')->all()),
+                $votingMemberName === '' => 'Mitglied fehlt',
+                $votingMember === null => "Mitglied „{$votingMemberName}“ gibt es nicht".$this->hint($votingMemberName, $votingMembers->pluck('name')->all()),
                 filter_var($email, FILTER_VALIDATE_EMAIL) === false => "Ungültige E-Mail-Adresse „{$email}“",
                 $name === '' && $user === null && ! isset($planned[$email]) => 'Name fehlt',
                 default => null,
@@ -66,14 +67,14 @@ class PeopleImport
                 continue;
             }
 
-            /** @var Club $club */
-            $alreadyAttached = in_array($club->id, $planned[$email] ?? [], true)
-                || ($user !== null && $user->clubs->contains('id', $club->id));
+            /** @var VotingMember $votingMember */
+            $alreadyAttached = in_array($votingMember->id, $planned[$email] ?? [], true)
+                || ($user !== null && $user->votingMembers->contains('id', $votingMember->id));
 
             $entries[] = [
                 'line' => $line,
-                'club_id' => $club->id,
-                'club' => $club->name,
+                'voting_member_id' => $votingMember->id,
+                'votingMember' => $votingMember->name,
                 'email' => $email,
                 'name' => $user->name ?? ($name !== '' ? $name : $this->plannedName($entries, $email)),
                 'action' => match (true) {
@@ -83,14 +84,14 @@ class PeopleImport
                 },
             ];
 
-            $planned[$email][] = $club->id;
+            $planned[$email][] = $votingMember->id;
         }
 
         return ['entries' => $entries, 'errors' => $errors];
     }
 
     /**
-     * @param  list<array{line: int, club_id: int, club: string, email: string, name: string, action: string}>  $entries
+     * @param  list<array{line: int, voting_member_id: int, votingMember: string, email: string, name: string, action: string}>  $entries
      * @return array{created: list<User>, attached: int, unchanged: int}
      */
     public function apply(array $entries): array
@@ -119,7 +120,7 @@ class PeopleImport
                     $created[] = $user;
                 }
 
-                $changes = $user->clubs()->syncWithoutDetaching([$entry['club_id']]);
+                $changes = $user->votingMembers()->syncWithoutDetaching([$entry['voting_member_id']]);
                 $attached += count($changes['attached']);
             }
 
@@ -129,7 +130,7 @@ class PeopleImport
 
     /**
      * @param  list<string>  $header
-     * @return array{club: int, email: int, name: int}
+     * @return array{votingMember: int, email: int, name: int}
      */
     private function columns(array $header): array
     {
@@ -153,7 +154,7 @@ class PeopleImport
             );
         }
 
-        /** @var array{club: int, email: int, name: int} $columns */
+        /** @var array{votingMember: int, email: int, name: int} $columns */
         return $columns;
     }
 
@@ -180,7 +181,7 @@ class PeopleImport
         $bestScore = 0.0;
 
         foreach ($names as $candidate) {
-            similar_text(Club::normalizeName($name), Club::normalizeName($candidate), $percent);
+            similar_text(VotingMember::normalizeName($name), VotingMember::normalizeName($candidate), $percent);
             if ($percent > $bestScore) {
                 [$best, $bestScore] = [$candidate, $percent];
             }

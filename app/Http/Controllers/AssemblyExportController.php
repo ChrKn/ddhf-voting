@@ -34,9 +34,9 @@ class AssemblyExportController extends Controller
             $row([]);
 
             $row(['Anwesenheit']);
-            $row(['Mitglied', 'Stimmen', 'Eingecheckt um']);
-            foreach ($assembly->clubs()->orderBy('name')->get() as $club) {
-                $row([$club->name, $club->attendance?->votes, $club->attendance?->checked_in_at?->format('d.m.Y H:i')]);
+            $row(['Stimmberechtigte', 'Stimmen', 'Eingecheckt um']);
+            foreach ($assembly->votingMembers()->orderBy('name')->get() as $votingMember) {
+                $row([$votingMember->name, $votingMember->attendance?->votes, $votingMember->attendance?->checked_in_at?->format('d.m.Y H:i')]);
             }
             $row(['Summe', $assembly->totalVotes(), '']);
 
@@ -51,7 +51,7 @@ class AssemblyExportController extends Controller
                 $row(['Art / Modus', $poll->type->label().' / '.$poll->mode->label()]);
                 $row(['Gestartet', $poll->opened_at?->format('d.m.Y H:i:s') ?? '']);
                 $row(['Beendet', $poll->closed_at?->format('d.m.Y H:i:s') ?? '']);
-                $row(['Beteiligung', "{$progress['clubs_voted']} von {$progress['clubs_present']} Mitgliedern, {$progress['votes_cast']} von {$progress['votes_present']} Stimmen"]);
+                $row(['Beteiligung', "{$progress['voting_members_voted']} von {$progress['voting_members_present']} Stimmberechtigten, {$progress['votes_cast']} von {$progress['votes_present']} Stimmen"]);
                 $row(['Amt / Frage', 'Option', 'Stimmen', 'Anteil ohne Enthaltung (%)']);
 
                 foreach ($result->positions() as $position) {
@@ -68,10 +68,10 @@ class AssemblyExportController extends Controller
                 $details = $result->details();
                 if ($details !== []) {
                     $row(['Detailergebnis (öffentlich)']);
-                    $row(['Mitglied', 'Stimmen', 'Amt / Frage', 'Abgestimmt mit']);
+                    $row(['Stimmberechtigte', 'Stimmen', 'Amt / Frage', 'Abgestimmt mit']);
                     foreach ($details as $detail) {
                         foreach ($detail['choices'] as $position => $label) {
-                            $row([$detail['club'], $detail['votes'], $position, $label]);
+                            $row([$detail['votingMember'], $detail['votes'], $position, $label]);
                         }
                     }
                 }
@@ -79,7 +79,7 @@ class AssemblyExportController extends Controller
 
             $row([]);
             $row(['Ablauf']);
-            $row(['Zeit', 'Ereignis', 'Mitglied / Abstimmung', 'Stimmen', 'Durch', 'Hinweis']);
+            $row(['Zeit', 'Ereignis', 'Stimmberechtigte / Abstimmung', 'Stimmen', 'Durch', 'Hinweis']);
             foreach ($assembly->events()->get() as $event) {
                 $discarded = $event->details['discarded_participations'] ?? null;
 

@@ -18,18 +18,18 @@ return new class extends Migration
         });
 
         // Anwesenheit; "votes" ist der Snapshot der Stimmen beim Check-in
-        Schema::create('assembly_club', function (Blueprint $table) {
+        Schema::create('assembly_voting_member', function (Blueprint $table) {
             $table->foreignId('assembly_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('club_id')->constrained()->restrictOnDelete();
+            $table->foreignId('voting_member_id')->constrained()->restrictOnDelete();
             $table->unsignedInteger('votes');
             $table->timestamp('checked_in_at')->nullable();
-            $table->primary(['assembly_id', 'club_id']);
+            $table->primary(['assembly_id', 'voting_member_id']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('assembly_club');
+        Schema::dropIfExists('assembly_voting_member');
         Schema::dropIfExists('assemblies');
     }
 };

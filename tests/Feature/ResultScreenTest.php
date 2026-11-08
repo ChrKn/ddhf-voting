@@ -3,9 +3,9 @@
 use App\Actions\CastVote;
 use App\Livewire\ResultScreen;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\AssemblyLifecycle;
 use App\Services\PollLifecycle;
 use Livewire\Livewire;
@@ -14,15 +14,15 @@ beforeEach(function () {
     $this->assembly = Assembly::factory()->create(['title' => 'MV 2027']);
     app(AssemblyLifecycle::class)->open($this->assembly);
 
-    $this->club = Club::factory()->members(120)->create(['name' => 'Geheimverein']);
-    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->club);
+    $this->votingMember = VotingMember::factory()->members(120)->create(['name' => 'Geheimverein']);
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
 
     $this->poll = Poll::factory()->create(['assembly_id' => $this->assembly->id, 'title' => 'Antrag Haushalt']);
     app(PollLifecycle::class)->open($this->poll);
 
-    $rep = User::factory()->forClub($this->club)->create();
+    $rep = User::factory()->forVotingMember($this->votingMember)->create();
     $position = $this->poll->positions()->first();
-    app(CastVote::class)->handle($rep, $this->club, $this->poll, [
+    app(CastVote::class)->handle($rep, $this->votingMember, $this->poll, [
         $position->id => $position->options()->where('label', 'Dafür')->value('id'),
     ]);
 });
@@ -44,7 +44,7 @@ it('zeigt bei offener Abstimmung nur den Fortschritt, keine Namen und kein Ergeb
     screen($this->assembly)
         ->assertSee('Antrag Haushalt')
         ->assertSee('Abstimmung läuft')
-        ->assertSee('1 von 1 Mitgliedern')
+        ->assertSee('1 von 1 Stimmberechtigten')
         ->assertDontSee('Geheimverein')
         ->assertDontSee('Dafür');
 });

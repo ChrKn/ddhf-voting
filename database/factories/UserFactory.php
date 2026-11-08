@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use App\Enums\Role;
-use App\Models\Club;
 use App\Models\User;
+use App\Models\VotingMember;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -55,8 +55,8 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => ['role' => Role::Manager]);
     }
 
-    public function forClub(Club $club): static
+    public function forVotingMember(VotingMember $votingMember): static
     {
-        return $this->afterCreating(fn (User $user) => $user->clubs()->attach($club));
+        return $this->afterCreating(fn (User $user) => $user->votingMembers()->attach($votingMember));
     }
 }

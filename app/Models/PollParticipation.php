@@ -37,11 +37,11 @@ class PollParticipation extends Model
     }
 
     /**
-     * @return BelongsTo<Club, $this>
+     * @return BelongsTo<VotingMember, $this>
      */
-    public function club(): BelongsTo
+    public function votingMember(): BelongsTo
     {
-        return $this->belongsTo(Club::class);
+        return $this->belongsTo(VotingMember::class);
     }
 
     /**

@@ -5,10 +5,10 @@ use App\Enums\AssemblyStatus;
 use App\Enums\PollStatus;
 use App\Exceptions\VotingException;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\PollParticipation;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\AssemblyLifecycle;
 use App\Services\PollLifecycle;
 use App\Services\PollResult;
@@ -34,14 +34,14 @@ beforeEach(function () {
     $this->cast = app(CastVote::class);
 
     // 120 Mitglieder → 3 Stimmen, 30 → 1 Stimme
-    $this->nord = Club::factory()->members(120)->create(['name' => 'Nord']);
-    $this->sued = Club::factory()->members(30)->create(['name' => 'Süd']);
-    $this->ost = Club::factory()->members(60)->create(['name' => 'Ost']);
+    $this->nord = VotingMember::factory()->members(120)->create(['name' => 'Nord']);
+    $this->sued = VotingMember::factory()->members(30)->create(['name' => 'Süd']);
+    $this->ost = VotingMember::factory()->members(60)->create(['name' => 'Ost']);
 
-    $this->alice = User::factory()->forClub($this->nord)->create();
-    $this->bob = User::factory()->forClub($this->nord)->create();
-    $this->carla = User::factory()->forClub($this->sued)->create();
-    $this->dora = User::factory()->forClub($this->ost)->create();
+    $this->alice = User::factory()->forVotingMember($this->nord)->create();
+    $this->bob = User::factory()->forVotingMember($this->nord)->create();
+    $this->carla = User::factory()->forVotingMember($this->sued)->create();
+    $this->dora = User::factory()->forVotingMember($this->ost)->create();
 
     $this->assembly = Assembly::factory()->create();
     $this->assemblies->open($this->assembly);
@@ -82,7 +82,7 @@ describe('Stimmabgabe', function () {
         // zweite Person desselben Vereins unmittelbar vor diesem Insert.
         PollParticipation::creating(function (PollParticipation $p) {
             DB::table('poll_participations')->insertOrIgnore([
-                'poll_id' => $p->poll_id, 'club_id' => $p->club_id, 'votes' => $p->votes,
+                'poll_id' => $p->poll_id, 'voting_member_id' => $p->voting_member_id, 'votes' => $p->votes,
             ]);
         });
 
@@ -97,7 +97,7 @@ describe('Stimmabgabe', function () {
         $this->cast->handle($this->alice, $this->nord, $this->poll, choose($this->poll, 'Dafür'));
 
         expect(PollParticipation::first()->public_choices)->toBeNull()
-            ->and(Schema::getColumnListing('poll_tallies'))->not->toContain('club_id')
+            ->and(Schema::getColumnListing('poll_tallies'))->not->toContain('voting_member_id')
             ->and(Schema::getColumnListing('poll_tallies'))->not->toContain('created_at')
             ->and(PollResult::for($this->poll)->details())->toBe([]);
     });
@@ -109,7 +109,7 @@ describe('Stimmabgabe', function () {
         $this->cast->handle($this->carla, $this->sued, $poll, choose($poll, 'Enthaltung'));
 
         expect(PollResult::for($poll)->details())->toBe([
-            ['club' => 'Süd', 'votes' => 1, 'choices' => [$poll->title => 'Enthaltung']],
+            ['votingMember' => 'Süd', 'votes' => 1, 'choices' => [$poll->title => 'Enthaltung']],
         ]);
     });
 
@@ -129,7 +129,7 @@ describe('Stimmabgabe', function () {
 
     it('lehnt Personen ab, die den Verein nicht vertreten', function () {
         expect(fn () => $this->cast->handle($this->carla, $this->nord, $this->poll, choose($this->poll, 'Dafür')))
-            ->toThrow(VotingException::class, 'nicht berechtigt');
+            ->toThrow(VotingException::class, 'vertrittst');
     });
 
     it('lehnt Stimmen nach dem Schließen ab', function () {
@@ -223,11 +223,11 @@ describe('Ablauf', function () {
         $result = PollResult::for($this->poll);
 
         expect($result->progress())->toBe([
-            'clubs_present' => 2,
-            'clubs_voted' => 1,
+            'voting_members_present' => 2,
+            'voting_members_voted' => 1,
             'votes_present' => 4,
             'votes_cast' => 3,
-        ])->and($result->pendingClubs()->pluck('name')->all())->toBe(['Süd']);
+        ])->and($result->pendingVotingMembers()->pluck('name')->all())->toBe(['Süd']);
     });
 
     it('schließt Versammlungen nur ohne offene Abstimmung', function () {
@@ -240,7 +240,7 @@ describe('Ablauf', function () {
     });
 
     it('checkt inaktive Vereine nicht ein und ändert den Snapshot beim erneuten Check-in nicht', function () {
-        $inactive = Club::factory()->create(['active' => false]);
+        $inactive = VotingMember::factory()->create(['active' => false]);
         expect(fn () => $this->assemblies->checkIn($this->assembly, $inactive))->toThrow(VotingException::class, 'inaktiv');
 
         $this->actingAs(User::factory()->systemAdmin()->create());

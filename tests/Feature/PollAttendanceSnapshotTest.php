@@ -2,9 +2,9 @@
 
 use App\Actions\CastVote;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\AssemblyLifecycle;
 use App\Services\PollLifecycle;
 use App\Services\PollResult;
@@ -15,8 +15,8 @@ beforeEach(function () {
     $this->assembly = Assembly::factory()->create();
     $this->assemblies->open($this->assembly);
 
-    $this->nord = Club::factory()->members(120)->create(); // 3 Stimmen
-    $this->ost = Club::factory()->members(10)->create();   // 1 Stimme
+    $this->nord = VotingMember::factory()->members(120)->create(); // 3 Stimmen
+    $this->ost = VotingMember::factory()->members(10)->create();   // 1 Stimme
     $this->assemblies->checkIn($this->assembly, $this->nord);
     $this->assemblies->checkIn($this->assembly, $this->ost);
 
@@ -24,10 +24,10 @@ beforeEach(function () {
     $this->polls->open($this->poll);
 });
 
-function voteFor(Club $club, Poll $poll): void
+function voteFor(VotingMember $votingMember, Poll $poll): void
 {
     $position = $poll->positions()->first();
-    app(CastVote::class)->handle(User::factory()->forClub($club)->create(), $club, $poll, [
+    app(CastVote::class)->handle(User::factory()->forVotingMember($votingMember)->create(), $votingMember, $poll, [
         $position->id => $position->options()->where('label', 'Dafür')->value('id'),
     ]);
 }
@@ -40,8 +40,8 @@ it('hält die Anwesenheit beim Beenden fest, spätere Checkouts ändern sie nich
     $this->assemblies->checkOut($this->assembly, $this->ost);
 
     expect(PollResult::for($this->poll->refresh())->progress())->toBe([
-        'clubs_present' => 2,
-        'clubs_voted' => 1,
+        'voting_members_present' => 2,
+        'voting_members_voted' => 1,
         'votes_present' => 4,
         'votes_cast' => 3,
     ]);
@@ -52,12 +52,12 @@ it('zählt Mitglieder, die abgestimmt und dann ausgecheckt haben, weiter als anw
     $this->assemblies->checkOut($this->assembly, $this->nord);
 
     expect(PollResult::for($this->poll)->progress())
-        ->toMatchArray(['clubs_present' => 2, 'votes_present' => 4]);
+        ->toMatchArray(['voting_members_present' => 2, 'votes_present' => 4]);
 
     $this->polls->close($this->poll);
 
     expect($this->poll->refresh())
-        ->clubs_present->toBe(2)
+        ->voting_members_present->toBe(2)
         ->votes_present->toBe(4);
 });
 
@@ -66,7 +66,7 @@ it('zählt Mitglieder, die ohne Abstimmung gegangen sind, nicht mehr mit', funct
     $this->polls->close($this->poll);
 
     expect($this->poll->refresh())
-        ->clubs_present->toBe(1)
+        ->voting_members_present->toBe(1)
         ->votes_present->toBe(3);
 });
 
@@ -75,6 +75,6 @@ it('verwirft die festgehaltene Anwesenheit beim Zurücksetzen', function () {
     $this->polls->reset($this->poll);
 
     expect($this->poll->refresh())
-        ->clubs_present->toBeNull()
+        ->voting_members_present->toBeNull()
         ->votes_present->toBeNull();
 });

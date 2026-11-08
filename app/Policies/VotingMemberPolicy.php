@@ -2,24 +2,24 @@
 
 namespace App\Policies;
 
-use App\Models\Club;
 use App\Models\User;
+use App\Models\VotingMember;
 
 /**
- * Vereine pflegt nur der Systemadmin. Verwalter:innen dürfen sie sehen
+ * Stimmberechtigte pflegt nur der Systemadmin. Verwalter:innen dürfen sie sehen
  * (für Check-in und Versammlungsleitung), aber nicht ändern – insbesondere
- * nicht die Mitgliederzahl, von der die Stimmen abhängen.
+ * nicht die Stimmen: Mitgliederzahl, feste Stimmen eines Präsidiumspostens, Typ.
  */
-class ClubPolicy
+class VotingMemberPolicy
 {
     public function viewAny(User $user): bool
     {
         return $user->canManage();
     }
 
-    public function view(User $user, Club $club): bool
+    public function view(User $user, VotingMember $votingMember): bool
     {
-        return $user->canManage() || $user->represents($club);
+        return $user->canManage() || $user->represents($votingMember);
     }
 
     public function create(User $user): bool
@@ -27,17 +27,17 @@ class ClubPolicy
         return $user->isSystemAdmin();
     }
 
-    public function update(User $user, Club $club): bool
+    public function update(User $user, VotingMember $votingMember): bool
     {
         return $user->isSystemAdmin();
     }
 
-    public function updateMemberCount(User $user, ?Club $club = null): bool
+    public function updateVotes(User $user, ?VotingMember $votingMember = null): bool
     {
         return $user->isSystemAdmin();
     }
 
-    public function delete(User $user, Club $club): bool
+    public function delete(User $user, VotingMember $votingMember): bool
     {
         return $user->isSystemAdmin();
     }

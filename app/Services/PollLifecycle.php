@@ -107,7 +107,7 @@ class PollLifecycle
                 'status' => PollStatus::Draft,
                 'opened_at' => null,
                 'closed_at' => null,
-                'clubs_present' => null,
+                'voting_members_present' => null,
                 'votes_present' => null,
             ])->save();
 

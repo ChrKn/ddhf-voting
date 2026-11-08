@@ -3,7 +3,8 @@
 return [
 
     /*
-    | Stimmen eines Vereins = floor(Mitglieder / votes_divisor) + votes_base
+    | Stimmen eines Mitglieds = floor(Mitglieder / votes_divisor) + votes_base
+    | (Präsidiumsposten haben stattdessen eine feste Stimmenzahl am Posten.)
     | Entspricht der bisherigen Excel-Formel ABRUNDEN(Mitglieder / 50 + 1; 0).
     */
     'votes_divisor' => (int) env('VOTING_VOTES_DIVISOR', 50),

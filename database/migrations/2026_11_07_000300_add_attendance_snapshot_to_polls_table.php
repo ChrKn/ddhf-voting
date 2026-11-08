@@ -10,15 +10,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('polls', function (Blueprint $table) {
-            $table->unsignedInteger('clubs_present')->nullable()->after('closed_at');
-            $table->unsignedInteger('votes_present')->nullable()->after('clubs_present');
+            $table->unsignedInteger('voting_members_present')->nullable()->after('closed_at');
+            $table->unsignedInteger('votes_present')->nullable()->after('voting_members_present');
         });
     }
 
     public function down(): void
     {
         Schema::table('polls', function (Blueprint $table) {
-            $table->dropColumn(['clubs_present', 'votes_present']);
+            $table->dropColumn(['voting_members_present', 'votes_present']);
         });
     }
 };

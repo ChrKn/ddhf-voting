@@ -4,7 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\AssemblyStatus;
 use App\Models\Assembly;
-use App\Models\Club;
+use App\Models\VotingMember;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -32,13 +32,13 @@ class AssemblyFactory extends Factory
     /**
      * Checkt die Vereine mit ihrer aktuellen Stimmenzahl ein.
      *
-     * @param  iterable<Club>  $clubs
+     * @param  iterable<VotingMember>  $votingMembers
      */
-    public function withCheckedIn(iterable $clubs): static
+    public function withCheckedIn(iterable $votingMembers): static
     {
-        return $this->afterCreating(function (Assembly $assembly) use ($clubs) {
-            foreach ($clubs as $club) {
-                $assembly->clubs()->attach($club, ['votes' => $club->votes, 'checked_in_at' => now()]);
+        return $this->afterCreating(function (Assembly $assembly) use ($votingMembers) {
+            foreach ($votingMembers as $votingMember) {
+                $assembly->votingMembers()->attach($votingMember, ['votes' => $votingMember->votes, 'checked_in_at' => now()]);
             }
         });
     }

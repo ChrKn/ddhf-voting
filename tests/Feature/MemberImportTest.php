@@ -1,10 +1,10 @@
 <?php
 
 use App\Exceptions\VotingException;
-use App\Filament\Resources\Clubs\ClubResource;
-use App\Filament\Resources\Clubs\Pages\ImportClubs;
-use App\Models\Club;
+use App\Filament\Resources\VotingMembers\Pages\ImportVotingMembers;
+use App\Filament\Resources\VotingMembers\VotingMemberResource;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\MemberImport;
 use Illuminate\Http\UploadedFile;
 use Livewire\Livewire;
@@ -58,8 +58,8 @@ describe('Einlesen', function () {
 
 describe('Zuordnung', function () {
     it('schlägt vorhandene Mitglieder per Name vor, unabhängig von Groß-/Kleinschreibung', function () {
-        $nord = Club::factory()->create(['name' => 'Fechtschule Nord']);
-        Club::factory()->create(['name' => 'Schwertkampf Süd e.V.']);
+        $nord = VotingMember::factory()->create(['name' => 'Fechtschule Nord']);
+        VotingMember::factory()->create(['name' => 'Schwertkampf Süd e.V.']);
 
         $rows = $this->import->rows([
             ['Name', 'Mitglieder'],
@@ -76,11 +76,44 @@ describe('Zuordnung', function () {
     });
 });
 
+describe('Präsidiumsposten', function () {
+    it('bietet sie weder als Ziel an noch meldet sie als fehlend', function () {
+        $this->actingAs(User::factory()->systemAdmin()->create());
+        VotingMember::factory()->boardMember(2, 'Präsident:in')->create();
+        VotingMember::factory()->create(['name' => 'Fechtschule Nord']);
+
+        $rows = $this->import->rows([['Name', 'Mitglieder'], ['Präsident:in', '10']], 0, 1, true);
+        expect($rows[0])->toMatchArray(['target' => 'new', 'similar' => null]);
+
+        Livewire::test(ImportVotingMembers::class)
+            ->set('upload', UploadedFile::fake()->createWithContent('m.csv', 'Name;Mitglieder
+Neu;5
+'))
+            ->assertSee('Fechtschule Nord')
+            ->assertDontSee('Präsident:in');
+    });
+
+    it('lässt keinen Namen eines Postens ein zweites Mal zu', function () {
+        $this->actingAs(User::factory()->systemAdmin()->create());
+        $post = VotingMember::factory()->boardMember(2, 'Präsident:in')->create();
+
+        expect(fn () => $this->import->apply([
+            ['line' => 2, 'name' => 'Präsident:in', 'count' => 3, 'error' => null, 'target' => 'new', 'rename' => true, 'similar' => null],
+        ]))->toThrow(VotingException::class, 'gibt es schon');
+
+        expect(fn () => $this->import->apply([
+            ['line' => 2, 'name' => 'X', 'count' => 3, 'error' => null, 'target' => (string) $post->id, 'rename' => true, 'similar' => null],
+        ]))->toThrow(VotingException::class, 'gibt es nicht mehr');
+
+        expect($post->fresh())->votes->toBe(2)->name->toBe('Präsident:in');
+    });
+});
+
 describe('Übernahme', function () {
     beforeEach(function () {
         $this->actingAs(User::factory()->systemAdmin()->create());
-        $this->nord = Club::factory()->members(100)->create(['name' => 'Fechtschule Nord']);
-        $this->sued = Club::factory()->members(40)->create(['name' => 'Schwertkampf Süd e.V.']);
+        $this->nord = VotingMember::factory()->members(100)->create(['name' => 'Fechtschule Nord']);
+        $this->sued = VotingMember::factory()->members(40)->create(['name' => 'Schwertkampf Süd e.V.']);
     });
 
     function row(int $line, string $name, ?int $count, string $target, bool $rename = true): array
@@ -99,7 +132,7 @@ describe('Übernahme', function () {
         expect($summary)->toBe(['created' => 1, 'updated' => 2, 'renamed' => 1, 'unchanged' => 0, 'skipped' => 1])
             ->and($this->nord->fresh()->member_count)->toBe(130)
             ->and($this->sued->fresh()->name)->toBe('Schwertkampf Süd')
-            ->and(Club::firstWhere('name', 'Ganz Neu')->member_count)->toBe(5);
+            ->and(VotingMember::firstWhere('name', 'Ganz Neu')->member_count)->toBe(5);
     });
 
     it('lässt den Namen auf Wunsch unverändert', function () {
@@ -125,7 +158,7 @@ describe('Übernahme', function () {
             row(2, 'Fechtschule Nord Neu', 40, (string) $this->sued->id),
             row(3, 'Fechtschule Nord', 7, 'new'),
         ]);
-        expect(Club::where('name', 'Fechtschule Nord')->value('member_count'))->toBe(7);
+        expect(VotingMember::where('name', 'Fechtschule Nord')->value('member_count'))->toBe(7);
     });
 
     it('lehnt doppelte Zuordnung und doppelte Namen ab, ohne etwas zu ändern', function () {
@@ -141,29 +174,29 @@ describe('Übernahme', function () {
             ->toThrow(VotingException::class, 'mehrfach');
 
         expect($this->nord->fresh()->member_count)->toBe(100)
-            ->and(Club::count())->toBe(2);
+            ->and(VotingMember::count())->toBe(2);
     });
 });
 
 describe('Seite', function () {
     it('ist nur für den Systemadmin', function () {
         $this->actingAs(User::factory()->manager()->create())
-            ->get(ClubResource::getUrl('import'))
+            ->get(VotingMemberResource::getUrl('import'))
             ->assertForbidden();
 
         $this->actingAs(User::factory()->systemAdmin()->create())
-            ->get(ClubResource::getUrl('import'))
+            ->get(VotingMemberResource::getUrl('import'))
             ->assertOk()
             ->assertSee('Mitglieder importieren');
     });
 
     it('führt durch Upload, Umzuordnung und Import', function () {
         $this->actingAs(User::factory()->systemAdmin()->create());
-        $old = Club::factory()->members(10)->create(['name' => 'Alter Name']);
+        $old = VotingMember::factory()->members(10)->create(['name' => 'Alter Name']);
 
         $file = UploadedFile::fake()->createWithContent('mitglieder.csv', "Name;Mitglieder\nNeuer Name;60\nNeu dazu;3\n");
 
-        $page = Livewire::test(ImportClubs::class)
+        $page = Livewire::test(ImportVotingMembers::class)
             ->set('upload', $file)
             ->assertHasNoErrors()
             ->assertSee('Neuer Name')
@@ -183,9 +216,9 @@ describe('Seite', function () {
 
     it('zeigt Probleme an, statt zu importieren', function () {
         $this->actingAs(User::factory()->systemAdmin()->create());
-        Club::factory()->create(['name' => 'Doppelt']);
+        VotingMember::factory()->create(['name' => 'Doppelt']);
 
-        Livewire::test(ImportClubs::class)
+        Livewire::test(ImportVotingMembers::class)
             ->set('upload', UploadedFile::fake()->createWithContent('m.csv', "Name;Mitglieder\nDoppelt;5\n"))
             ->set('rows.0.target', 'new')
             ->call('import')
@@ -196,7 +229,7 @@ describe('Seite', function () {
     it('lehnt andere Dateitypen ab', function () {
         $this->actingAs(User::factory()->systemAdmin()->create());
 
-        Livewire::test(ImportClubs::class)
+        Livewire::test(ImportVotingMembers::class)
             ->set('upload', UploadedFile::fake()->create('bild.png', 10))
             ->assertHasErrors('upload');
     });

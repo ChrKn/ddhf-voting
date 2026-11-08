@@ -1,7 +1,8 @@
 # DDHF MV Abstimmungssystem
 
 Abstimmungstool für Versammlungen des Deutschen Dachverbands für historisches Fechten e.V.
-Mitglieder (in der Regel Vereine) stimmen mit einer Stimmenzahl ab, die sich aus ihrer Mitgliederzahl ergibt.
+Stimmberechtigt sind die Mitglieder (in der Regel Vereine) mit einer Stimmenzahl, die sich aus ihrer
+Mitgliederzahl ergibt, und die Präsidiumsposten mit einer festen Stimmenzahl je Posten.
 
 ## Stack
 
@@ -68,10 +69,13 @@ Personenliste, können aber nichts bearbeiten und nur Vertreter:innen einladen.
 
 ## Erstbefüllung
 
-1. **Mitglieder** in der Verwaltung unter *Mitglieder → Importieren* hochladen
+1. **Mitglieder** in der Verwaltung unter *Stimmberechtigte → Importieren* hochladen
    (CSV oder XLSX mit Name und Anzahl Mitglieder). Umbenannte Mitglieder lassen sich
-   dort einem vorhandenen Eintrag zuordnen.
-2. **Personen** per Konsole anlegen und den Mitgliedern zuordnen:
+   dort einem vorhandenen Eintrag zuordnen. Präsidiumsposten berührt der Import nicht.
+2. **Präsidiumsposten** von Hand unter *Stimmberechtigte → Erstellen* anlegen: Art „Präsidium“,
+   als Name der Posten (z. B. „Präsident:in“), dazu die feste Stimmenzahl. Die Stimmen hängen am
+   Posten; wechselt die Person, wird nur die Zuordnung geändert.
+3. **Personen** per Konsole anlegen und den Mitgliedern bzw. Posten zuordnen:
 
    ```sh
    php artisan voting:import-people personen.xlsx --dry-run   # nur anzeigen
@@ -88,7 +92,8 @@ Personenliste, können aber nichts bearbeiten und nur Vertreter:innen einladen.
    | Fechtgilde Ost   | anna@example.com  | Anna Muster |
    | Fechtgilde Ost   | bert@example.com  | Bert Beispiel |
 
-   - *Mitglied* (alternativ *Verein*) muss wie in der Verwaltung heißen (Groß-/Kleinschreibung egal).
+   - *Mitglied* (alternativ *Verein*, *Stimmberechtigte* oder *Posten*) muss wie in der Verwaltung
+     heißen (Groß-/Kleinschreibung egal). Präsidiumsposten werden genauso über ihren Namen gefunden.
    - Eine Person in mehreren Zeilen vertritt mehrere Mitglieder.
    - Vorhandene Personen (gleiche E-Mail) werden nur zugeordnet, Name und Rolle bleiben unverändert.
    - Bei fehlerhaften Zeilen bricht der Befehl ab; `--skip-invalid` importiert nur die gültigen.

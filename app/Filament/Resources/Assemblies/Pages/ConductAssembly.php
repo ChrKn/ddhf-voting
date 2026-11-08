@@ -7,9 +7,9 @@ use App\Enums\PollStatus;
 use App\Exceptions\VotingException;
 use App\Filament\Resources\Assemblies\AssemblyResource;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\AssemblyLifecycle;
 use App\Services\PollLifecycle;
 use App\Services\PollResult;
@@ -40,7 +40,7 @@ class ConductAssembly extends Page
 
     public ?int $selectedPollId = null;
 
-    public string $clubSearch = '';
+    public string $votingMemberSearch = '';
 
     public function mount(int|string $record): void
     {
@@ -93,16 +93,16 @@ class ConductAssembly extends Page
 
     // ---------------------------------------------------------------- Check-in
 
-    public function checkIn(int $clubId): void
+    public function checkIn(int $votingMemberId): void
     {
-        $club = Club::findOrFail($clubId);
-        $this->run(fn () => app(AssemblyLifecycle::class)->checkIn($this->assembly(), $club), "{$club->name} eingecheckt");
+        $votingMember = VotingMember::findOrFail($votingMemberId);
+        $this->run(fn () => app(AssemblyLifecycle::class)->checkIn($this->assembly(), $votingMember), "{$votingMember->name} eingecheckt");
     }
 
-    public function checkOut(int $clubId): void
+    public function checkOut(int $votingMemberId): void
     {
-        $club = Club::findOrFail($clubId);
-        $this->run(fn () => app(AssemblyLifecycle::class)->checkOut($this->assembly(), $club), "{$club->name} ausgecheckt");
+        $votingMember = VotingMember::findOrFail($votingMemberId);
+        $this->run(fn () => app(AssemblyLifecycle::class)->checkOut($this->assembly(), $votingMember), "{$votingMember->name} ausgecheckt");
     }
 
     // ------------------------------------------------------------ Abstimmungen
@@ -156,12 +156,12 @@ class ConductAssembly extends Page
             'canConduct' => $this->user()->can('conduct', $assembly),
             'attendance' => $this->attendance(),
             'totalVotes' => $assembly->totalVotes(),
-            'checkedInCount' => $assembly->clubs()->count(),
+            'checkedInCount' => $assembly->votingMembers()->count(),
             'polls' => $polls,
             'openPollCount' => $polls->where('status', PollStatus::Open)->count(),
             'poll' => $poll,
             'progress' => $result?->progress(),
-            'pending' => $result?->pendingClubs() ?? collect(),
+            'pending' => $result?->pendingVotingMembers() ?? collect(),
             'results' => $showResults ? $result?->positions() : null,
             'details' => $showResults ? $result?->details() : [],
         ];
@@ -170,21 +170,21 @@ class ConductAssembly extends Page
     /**
      * Alle aktiven Vereine (plus eingecheckte inaktive) mit Check-in-Status.
      *
-     * @return Collection<int, array{club: Club, votes: ?int, checked_in_at: ?Carbon}>
+     * @return Collection<int, array{votingMember: VotingMember, votes: ?int, checked_in_at: ?Carbon}>
      */
     private function attendance(): Collection
     {
-        $checkedIn = $this->assembly()->clubs()->get()->keyBy('id');
+        $checkedIn = $this->assembly()->votingMembers()->get()->keyBy('id');
 
-        return Club::query()
+        return VotingMember::query()
             ->where(fn ($q) => $q->where('active', true)->orWhereIn('id', $checkedIn->keys()))
-            ->when($this->clubSearch !== '', fn ($q) => $q->where('name', 'like', '%'.$this->clubSearch.'%'))
+            ->when($this->votingMemberSearch !== '', fn ($q) => $q->where('name', 'like', '%'.$this->votingMemberSearch.'%'))
             ->orderBy('name')
             ->get()
-            ->map(fn (Club $club) => [
-                'club' => $club,
-                'votes' => $checkedIn->get($club->id)?->attendance->votes,
-                'checked_in_at' => $checkedIn->get($club->id)?->attendance->checked_in_at,
+            ->map(fn (VotingMember $votingMember) => [
+                'votingMember' => $votingMember,
+                'votes' => $checkedIn->get($votingMember->id)?->attendance->votes,
+                'checked_in_at' => $checkedIn->get($votingMember->id)?->attendance->checked_in_at,
             ]);
     }
 

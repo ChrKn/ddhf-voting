@@ -12,13 +12,13 @@ return new class extends Migration
         Schema::create('poll_participations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('poll_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('club_id')->constrained()->restrictOnDelete();
+            $table->foreignId('voting_member_id')->constrained()->restrictOnDelete();
             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
             $table->unsignedInteger('votes');
             // nur bei öffentlichen Abstimmungen befüllt: [position_id => option_id]
             $table->json('public_choices')->nullable();
             $table->timestamp('created_at')->nullable();
-            $table->unique(['poll_id', 'club_id']);
+            $table->unique(['poll_id', 'voting_member_id']);
         });
 
         // Wie wurde abgestimmt (nicht: wer). Es werden keine Einzelstimmen gespeichert,

@@ -51,7 +51,7 @@ class ImportPeople extends Command
         if ($entries !== []) {
             $this->table(
                 ['Zeile', 'Mitglied', 'E-Mail', 'Name', 'Aktion'],
-                array_map(fn ($e) => [$e['line'], $e['club'], $e['email'], $e['name'], self::ACTIONS[$e['action']]], $entries),
+                array_map(fn ($e) => [$e['line'], $e['votingMember'], $e['email'], $e['name'], self::ACTIONS[$e['action']]], $entries),
             );
         }
 

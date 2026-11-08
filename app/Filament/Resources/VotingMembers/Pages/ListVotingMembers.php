@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Filament\Resources\Clubs\Pages;
+namespace App\Filament\Resources\VotingMembers\Pages;
 
-use App\Filament\Resources\Clubs\ClubResource;
+use App\Filament\Resources\VotingMembers\VotingMemberResource;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Support\Icons\Heroicon;
 
-class ListClubs extends ListRecords
+class ListVotingMembers extends ListRecords
 {
-    protected static string $resource = ClubResource::class;
+    protected static string $resource = VotingMemberResource::class;
 
     protected function getHeaderActions(): array
     {
@@ -19,8 +19,8 @@ class ListClubs extends ListRecords
                 ->label('Importieren')
                 ->icon(Heroicon::OutlinedArrowUpTray)
                 ->color('gray')
-                ->visible(fn () => ImportClubs::canAccess())
-                ->url(fn () => ClubResource::getUrl('import')),
+                ->visible(fn () => ImportVotingMembers::canAccess())
+                ->url(fn () => VotingMemberResource::getUrl('import')),
             CreateAction::make(),
         ];
     }

@@ -3,11 +3,11 @@
 namespace App\Actions;
 
 use App\Exceptions\VotingException;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\PollParticipation;
 use App\Models\PollTally;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\AssemblyLifecycle;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -26,14 +26,14 @@ class CastVote
     /**
      * @param  array<int|string, int|string>  $choices  position_id => option_id
      */
-    public function handle(User $user, Club $club, Poll $poll, array $choices): PollParticipation
+    public function handle(User $user, VotingMember $votingMember, Poll $poll, array $choices): PollParticipation
     {
-        if (! $user->represents($club)) {
-            throw new VotingException('Du bist nicht berechtigt, für dieses Mitglied abzustimmen.');
+        if (! $user->represents($votingMember)) {
+            throw new VotingException('Du vertrittst dieses Mitglied bzw. diesen Posten nicht.');
         }
 
         try {
-            return DB::transaction(function () use ($user, $club, $poll, $choices) {
+            return DB::transaction(function () use ($user, $votingMember, $poll, $choices) {
                 // Status innerhalb der Transaktion prüfen, damit ein gleichzeitiges
                 // Schließen nicht übergangen wird.
                 $poll = Poll::query()->with(['assembly', 'positions.options'])->lockForUpdate()->findOrFail($poll->getKey());
@@ -42,20 +42,20 @@ class CastVote
                     throw new VotingException('Die Abstimmung ist nicht (mehr) offen.');
                 }
 
-                $votes = $this->assemblies->votesOf($poll->assembly, $club);
+                $votes = $this->assemblies->votesOf($poll->assembly, $votingMember);
                 if ($votes === null) {
-                    throw new VotingException("{$club->name} ist nicht zur Versammlung eingecheckt.");
+                    throw new VotingException("{$votingMember->name} ist nicht zur Versammlung eingecheckt.");
                 }
 
-                if ($poll->hasVoted($club)) {
-                    throw new VotingException("{$club->name} hat bereits abgestimmt.");
+                if ($poll->hasVoted($votingMember)) {
+                    throw new VotingException("{$votingMember->name} hat bereits abgestimmt.");
                 }
 
                 $selected = $this->validatedChoices($poll, $choices);
 
                 $participation = PollParticipation::create([
                     'poll_id' => $poll->getKey(),
-                    'club_id' => $club->getKey(),
+                    'voting_member_id' => $votingMember->getKey(),
                     'user_id' => $user->getKey(),
                     'votes' => $votes,
                     'public_choices' => $poll->isPublic() ? $selected : null,
@@ -76,7 +76,7 @@ class CastVote
             });
         } catch (UniqueConstraintViolationException) {
             // Zwei Personen desselben Vereins gleichzeitig: die zweite Abgabe scheitert hier.
-            throw new VotingException("{$club->name} hat bereits abgestimmt.");
+            throw new VotingException("{$votingMember->name} hat bereits abgestimmt.");
         }
     }
 

@@ -76,9 +76,9 @@ class AssemblyResource extends Resource
                 TextColumn::make('polls_count')
                     ->label('Abstimmungen')
                     ->counts('polls'),
-                TextColumn::make('clubs_count')
+                TextColumn::make('voting_members_count')
                     ->label('Eingecheckt')
-                    ->counts('clubs'),
+                    ->counts('votingMembers'),
             ])
             ->recordUrl(fn (Assembly $record) => static::getUrl('conduct', ['record' => $record]))
             ->recordActions([

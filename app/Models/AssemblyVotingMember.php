@@ -11,9 +11,9 @@ use Illuminate\Support\Carbon;
  * @property int $votes Stimmen-Snapshot beim Check-in
  * @property Carbon|null $checked_in_at
  */
-class AssemblyClub extends Pivot
+class AssemblyVotingMember extends Pivot
 {
-    protected $table = 'assembly_club';
+    protected $table = 'assembly_voting_member';
 
     public $timestamps = false;
 

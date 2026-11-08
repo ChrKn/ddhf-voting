@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Filament\Resources\Clubs;
+namespace App\Filament\Resources\VotingMembers;
 
-use App\Filament\Resources\Clubs\Pages\CreateClub;
-use App\Filament\Resources\Clubs\Pages\EditClub;
-use App\Filament\Resources\Clubs\Pages\ImportClubs;
-use App\Filament\Resources\Clubs\Pages\ListClubs;
-use App\Models\Club;
+use App\Enums\VotingMemberType;
+use App\Filament\Resources\VotingMembers\Pages\CreateVotingMember;
+use App\Filament\Resources\VotingMembers\Pages\EditVotingMember;
+use App\Filament\Resources\VotingMembers\Pages\ImportVotingMembers;
+use App\Filament\Resources\VotingMembers\Pages\ListVotingMembers;
+use App\Models\VotingMember;
 use App\Services\VoteWeightCalculator;
 use BackedEnum;
 use Filament\Actions\EditAction;
@@ -20,13 +21,14 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use UnitEnum;
 
-class ClubResource extends Resource
+class VotingMemberResource extends Resource
 {
-    protected static ?string $model = Club::class;
+    protected static ?string $model = VotingMember::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingLibrary;
 
@@ -34,9 +36,9 @@ class ClubResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    protected static ?string $modelLabel = 'Mitglied';
+    protected static ?string $modelLabel = 'Stimmberechtigte';
 
-    protected static ?string $pluralModelLabel = 'Mitglieder';
+    protected static ?string $pluralModelLabel = 'Stimmberechtigte';
 
     public static function form(Schema $schema): Schema
     {
@@ -50,7 +52,17 @@ class ClubResource extends Resource
                             ->required()
                             ->maxLength(255)
                             ->unique(ignoreRecord: true)
+                            ->helperText(fn (Get $get) => self::isBoard($get) ? 'Der Posten, z. B. „Präsident:in“ – nicht die Person.' : null)
                             ->columnSpanFull(),
+                        Select::make('type')
+                            ->label('Art')
+                            ->options(VotingMemberType::class)
+                            ->default(VotingMemberType::Member)
+                            ->required()
+                            ->selectablePlaceholder(false)
+                            ->live()
+                            ->disabled(fn (?VotingMember $record) => ! static::canEditVotes($record))
+                            ->dehydrated(fn (?VotingMember $record) => static::canEditVotes($record)),
                         TextInput::make('member_count')
                             ->label('Mitgliederzahl')
                             ->numeric()
@@ -59,12 +71,24 @@ class ClubResource extends Resource
                             ->required()
                             ->default(0)
                             ->live(debounce: 300)
-                            ->disabled(fn (?Club $record) => ! static::canEditMemberCount($record))
-                            ->dehydrated(fn (?Club $record) => static::canEditMemberCount($record))
+                            ->visible(fn (Get $get) => ! self::isBoard($get))
+                            ->disabled(fn (?VotingMember $record) => ! static::canEditVotes($record))
+                            ->dehydrated(fn (?VotingMember $record) => static::canEditVotes($record))
                             ->helperText(fn (Get $get) => 'Ergibt '.app(VoteWeightCalculator::class)->votesFor((int) $get('member_count')).' Stimme(n).'),
+                        TextInput::make('votes')
+                            ->label('Stimmen')
+                            ->numeric()
+                            ->integer()
+                            ->minValue(1)
+                            ->required()
+                            ->default(1)
+                            ->visible(fn (Get $get) => self::isBoard($get))
+                            ->disabled(fn (?VotingMember $record) => ! static::canEditVotes($record))
+                            ->dehydrated(fn (?VotingMember $record) => static::canEditVotes($record))
+                            ->helperText('Feste Stimmenzahl des Postens.'),
                         Toggle::make('active')
                             ->label('Aktiv')
-                            ->helperText('Inaktive Mitglieder können nicht eingecheckt werden.')
+                            ->helperText('Inaktive Stimmberechtigte können nicht eingecheckt werden.')
                             ->default(true)
                             ->inline(false),
                         Select::make('users')
@@ -89,13 +113,18 @@ class ClubResource extends Resource
                     ->label('Name')
                     ->searchable()
                     ->sortable(),
+                TextColumn::make('type')
+                    ->label('Art')
+                    ->badge()
+                    ->sortable(),
                 TextColumn::make('member_count')
                     ->label('Mitglieder')
                     ->numeric()
+                    ->placeholder('–')
                     ->sortable(),
                 TextColumn::make('votes')
                     ->label('Stimmen')
-                    ->state(fn (Club $record) => $record->votes)
+                    ->state(fn (VotingMember $record) => $record->votes)
                     ->badge(),
                 TextColumn::make('users_count')
                     ->label('Personen')
@@ -105,6 +134,7 @@ class ClubResource extends Resource
                     ->boolean(),
             ])
             ->filters([
+                SelectFilter::make('type')->label('Art')->options(VotingMemberType::class),
                 TernaryFilter::make('active')->label('Aktiv'),
             ])
             ->recordActions([
@@ -112,20 +142,28 @@ class ClubResource extends Resource
             ]);
     }
 
-    public static function canEditMemberCount(?Club $record): bool
+    /** Ob das Formular gerade einen Präsidiumsposten zeigt (der Wert kommt als Enum oder String). */
+    private static function isBoard(Get $get): bool
+    {
+        $type = $get('type');
+
+        return ($type instanceof VotingMemberType ? $type : VotingMemberType::tryFrom((string) $type)) === VotingMemberType::BoardMember;
+    }
+
+    public static function canEditVotes(?VotingMember $record): bool
     {
         $user = auth()->user();
 
-        return $user !== null && $user->can('updateMemberCount', $record ?? Club::class);
+        return $user !== null && $user->can('updateVotes', $record ?? VotingMember::class);
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => ListClubs::route('/'),
-            'create' => CreateClub::route('/create'),
-            'import' => ImportClubs::route('/import'),
-            'edit' => EditClub::route('/{record}/edit'),
+            'index' => ListVotingMembers::route('/'),
+            'create' => CreateVotingMember::route('/create'),
+            'import' => ImportVotingMembers::route('/import'),
+            'edit' => EditVotingMember::route('/{record}/edit'),
         ];
     }
 }

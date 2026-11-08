@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use App\Enums\PollMode;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\AssemblyLifecycle;
 use Illuminate\Database\Seeder;
 
@@ -16,6 +16,7 @@ use Illuminate\Database\Seeder;
  * - admin@example.com    Systemadmin
  * - leitung@example.com  Verwalter:in
  * - <verein>@example.com je eine Vereinsvertretung (z.B. nord@example.com)
+ * - praesidium@example.com, vize@example.com je ein Präsidiumsposten
  */
 class DatabaseSeeder extends Seeder
 {
@@ -30,7 +31,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->systemAdmin()->create(['name' => 'Systemadmin', 'email' => 'admin@example.com']);
         User::factory()->manager()->create(['name' => 'Versammlungsleitung', 'email' => 'leitung@example.com']);
 
-        $clubs = collect([
+        $votingMembers = collect([
             'nord' => ['Fechtschule Nord', 132],
             'sued' => ['Schwertkampf Süd e.V.', 48],
             'ost' => ['Fechtgilde Ost', 75],
@@ -39,20 +40,32 @@ class DatabaseSeeder extends Seeder
             'kueste' => ['Küstenfechter', 51],
         ])->map(function (array $data, string $key) {
             [$name, $members] = $data;
-            $club = Club::factory()->create(['name' => $name, 'member_count' => $members]);
-            User::factory()->forClub($club)->create(['name' => "Vertretung {$name}", 'email' => "{$key}@example.com"]);
+            $votingMember = VotingMember::factory()->create(['name' => $name, 'member_count' => $members]);
+            User::factory()->forVotingMember($votingMember)->create(['name' => "Vertretung {$name}", 'email' => "{$key}@example.com"]);
 
-            return $club;
+            return $votingMember;
+        });
+
+        // Präsidiumsposten mit festen Stimmen; die Stimmen hängen am Posten, nicht an der Person
+        $board = collect([
+            'praesidium' => ['Präsident:in', 2, 'Präsidium Beispiel'],
+            'vize' => ['Vizepräsident:in Sport', 1, 'Vize Beispiel'],
+        ])->map(function (array $data, string $key) {
+            [$name, $votes, $person] = $data;
+            $post = VotingMember::factory()->boardMember($votes, $name)->create();
+            User::factory()->forVotingMember($post)->create(['name' => $person, 'email' => "{$key}@example.com"]);
+
+            return $post;
         });
 
         // Eine Person, die zwei Vereine vertritt (Vollmacht)
-        User::factory()->forClub($clubs['ost'])->create(['name' => 'Vollmacht Ost/Mitte', 'email' => 'vollmacht@example.com'])
-            ->clubs()->attach($clubs['mitte']);
+        User::factory()->forVotingMember($votingMembers['ost'])->create(['name' => 'Vollmacht Ost/Mitte', 'email' => 'vollmacht@example.com'])
+            ->votingMembers()->attach($votingMembers['mitte']);
 
         $assembly = Assembly::factory()->create(['title' => 'Mitgliederversammlung '.now()->year, 'date' => now()]);
         $lifecycle = app(AssemblyLifecycle::class);
         $lifecycle->open($assembly);
-        $clubs->except('kueste')->each(fn (Club $club) => $lifecycle->checkIn($assembly, $club));
+        $votingMembers->except('kueste')->concat($board)->each(fn (VotingMember $votingMember) => $lifecycle->checkIn($assembly, $votingMember));
 
         Poll::factory()->create([
             'assembly_id' => $assembly->id,

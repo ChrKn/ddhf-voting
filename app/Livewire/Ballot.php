@@ -7,10 +7,10 @@ use App\Enums\AssemblyStatus;
 use App\Enums\PollStatus;
 use App\Exceptions\VotingException;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\PollParticipation;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\AssemblyLifecycle;
 use App\Services\PollResult;
 use Illuminate\Contracts\View\View;
@@ -24,7 +24,7 @@ use Livewire\Component;
  * Wahlmaske für Vereinsvertreter:innen. Aktualisiert sich per Polling, damit
  * neu geöffnete Abstimmungen ohne Neuladen erscheinen.
  *
- * @property-read Club|null $club
+ * @property-read VotingMember|null $votingMember
  * @property-read Assembly|null $assembly
  * @property-read int|null $votes
  * @property-read Poll|null $poll
@@ -35,7 +35,7 @@ use Livewire\Component;
 class Ballot extends Component
 {
     #[Session]
-    public ?int $clubId = null;
+    public ?int $votingMemberId = null;
 
     /** @var array<int|string, int|string|null> position_id => option_id */
     public array $choices = [];
@@ -49,17 +49,17 @@ class Ballot extends Component
 
     public function mount(): void
     {
-        $clubs = $this->clubs();
+        $votingMembers = $this->votingMembers();
 
-        if ($this->clubId === null || ! $clubs->contains('id', $this->clubId)) {
-            $this->clubId = $clubs->count() === 1 ? $clubs->first()->id : null;
+        if ($this->votingMemberId === null || ! $votingMembers->contains('id', $this->votingMemberId)) {
+            $this->votingMemberId = $votingMembers->count() === 1 ? $votingMembers->first()->id : null;
         }
     }
 
-    public function selectClub(int $clubId): void
+    public function selectVotingMember(int $votingMemberId): void
     {
-        if ($this->clubs()->contains('id', $clubId)) {
-            $this->clubId = $clubId;
+        if ($this->votingMembers()->contains('id', $votingMemberId)) {
+            $this->votingMemberId = $votingMemberId;
             $this->resetBallot();
         }
     }
@@ -92,10 +92,10 @@ class Ballot extends Component
     public function submit(CastVote $castVote): void
     {
         $this->error = null;
-        $club = $this->club;
+        $votingMember = $this->votingMember;
         $poll = $this->poll;
 
-        if ($club === null || $poll === null) {
+        if ($votingMember === null || $poll === null) {
             $this->error = 'Die Abstimmung ist nicht mehr offen.';
             $this->confirming = false;
 
@@ -103,7 +103,7 @@ class Ballot extends Component
         }
 
         try {
-            $castVote->handle($this->user(), $club, $poll, $this->choices);
+            $castVote->handle($this->user(), $votingMember, $poll, $this->choices);
         } catch (VotingException $e) {
             $this->error = $e->getMessage();
         }
@@ -113,9 +113,9 @@ class Ballot extends Component
     }
 
     #[Computed]
-    public function club(): ?Club
+    public function votingMember(): ?VotingMember
     {
-        return $this->clubId ? $this->clubs()->firstWhere('id', $this->clubId) : null;
+        return $this->votingMemberId ? $this->votingMembers()->firstWhere('id', $this->votingMemberId) : null;
     }
 
     /**
@@ -127,8 +127,8 @@ class Ballot extends Component
     {
         $open = Assembly::query()->where('status', AssemblyStatus::Open)->latest('date')->latest('id');
 
-        if ($this->club !== null) {
-            $checkedIn = (clone $open)->whereHas('clubs', fn ($q) => $q->whereKey($this->club->id))->first();
+        if ($this->votingMember !== null) {
+            $checkedIn = (clone $open)->whereHas('votingMembers', fn ($q) => $q->whereKey($this->votingMember->id))->first();
             if ($checkedIn !== null) {
                 return $checkedIn;
             }
@@ -140,8 +140,8 @@ class Ballot extends Component
     #[Computed]
     public function votes(): ?int
     {
-        return ($this->assembly && $this->club)
-            ? app(AssemblyLifecycle::class)->votesOf($this->assembly, $this->club)
+        return ($this->assembly && $this->votingMember)
+            ? app(AssemblyLifecycle::class)->votesOf($this->assembly, $this->votingMember)
             : null;
     }
 
@@ -157,8 +157,8 @@ class Ballot extends Component
     #[Computed]
     public function participation(): ?PollParticipation
     {
-        return ($this->poll && $this->club)
-            ? $this->poll->participations()->where('club_id', $this->club->id)->first()
+        return ($this->poll && $this->votingMember)
+            ? $this->poll->participations()->where('voting_member_id', $this->votingMember->id)->first()
             : null;
     }
 
@@ -202,7 +202,7 @@ class Ballot extends Component
         $this->syncBallotWithPoll();
 
         return view('livewire.ballot', [
-            'clubs' => $this->clubs(),
+            'votingMembers' => $this->votingMembers(),
             'publishedResult' => $this->published ? PollResult::for($this->published)->positions() : null,
         ]);
     }
@@ -237,11 +237,11 @@ class Ballot extends Component
     }
 
     /**
-     * @return Collection<int, Club>
+     * @return Collection<int, VotingMember>
      */
-    private function clubs(): Collection
+    private function votingMembers(): Collection
     {
-        return $this->user()->clubs()->orderBy('name')->get();
+        return $this->user()->votingMembers()->orderBy('name')->get();
     }
 
     private function user(): User

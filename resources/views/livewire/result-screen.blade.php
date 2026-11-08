@@ -13,7 +13,7 @@
                 <div class="flex items-baseline justify-between">
                     <span class="text-3xl font-semibold text-green-700">Abstimmung läuft</span>
                     <span class="tabular-nums text-neutral-600">
-                        {{ $progress['clubs_voted'] }} von {{ $progress['clubs_present'] }} Mitgliedern
+                        {{ $progress['voting_members_voted'] }} von {{ $progress['voting_members_present'] }} Stimmberechtigten
                         · {{ $progress['votes_cast'] }} von {{ $progress['votes_present'] }} Stimmen
                     </span>
                 </div>

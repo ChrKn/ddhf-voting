@@ -3,18 +3,19 @@
 use App\Enums\PollStatus;
 use App\Enums\PollType;
 use App\Enums\Role;
-use App\Filament\Resources\Clubs\ClubResource;
-use App\Filament\Resources\Clubs\Pages\CreateClub;
-use App\Filament\Resources\Clubs\Pages\EditClub;
+use App\Enums\VotingMemberType;
 use App\Filament\Resources\Polls\Pages\CreatePoll;
 use App\Filament\Resources\Polls\Pages\EditPoll;
 use App\Filament\Resources\Polls\PollResource;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\UserResource;
+use App\Filament\Resources\VotingMembers\Pages\CreateVotingMember;
+use App\Filament\Resources\VotingMembers\Pages\EditVotingMember;
+use App\Filament\Resources\VotingMembers\VotingMemberResource;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\User;
+use App\Models\VotingMember;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Notification;
@@ -53,53 +54,76 @@ describe('Vereine und Mitgliederzahl', function () {
     it('lässt den Systemadmin Vereine mit Mitgliederzahl anlegen', function () {
         $this->actingAs($this->admin);
 
-        Livewire::test(CreateClub::class)
+        Livewire::test(CreateVotingMember::class)
             ->fillForm(['name' => 'Fechtschule Nord', 'member_count' => 75, 'active' => true])
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $club = Club::firstWhere('name', 'Fechtschule Nord');
-        expect($club->member_count)->toBe(75)->and($club->votes)->toBe(2);
+        $votingMember = VotingMember::firstWhere('name', 'Fechtschule Nord');
+        expect($votingMember->member_count)->toBe(75)->and($votingMember->votes)->toBe(2);
+    });
+
+    it('lässt den Systemadmin Präsidiumsposten mit fester Stimmenzahl anlegen', function () {
+        $this->actingAs($this->admin);
+
+        Livewire::test(CreateVotingMember::class)
+            ->fillForm(['name' => 'Präsident:in', 'type' => VotingMemberType::BoardMember->value])
+            ->assertFormFieldIsHidden('member_count')
+            ->assertFormFieldIsVisible('votes')
+            ->fillForm(['votes' => 2, 'active' => true])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $post = VotingMember::firstWhere('name', 'Präsident:in');
+        expect($post->type)->toBe(VotingMemberType::BoardMember)
+            ->and($post->member_count)->toBeNull()
+            ->and($post->votes)->toBe(2);
     });
 
     it('lässt den Systemadmin die Mitgliederzahl ändern', function () {
-        $club = Club::factory()->members(10)->create();
+        $votingMember = VotingMember::factory()->members(10)->create();
         $this->actingAs($this->admin);
 
-        Livewire::test(EditClub::class, ['record' => $club->getRouteKey()])
+        Livewire::test(EditVotingMember::class, ['record' => $votingMember->getRouteKey()])
             ->fillForm(['member_count' => 120])
             ->call('save')
             ->assertHasNoFormErrors();
 
-        expect($club->fresh()->member_count)->toBe(120);
+        expect($votingMember->fresh()->member_count)->toBe(120);
     });
 
     it('zeigt Verwalter:innen die Vereinsliste, aber keine Bearbeitung', function () {
-        $club = Club::factory()->create();
+        $votingMember = VotingMember::factory()->create();
         $this->actingAs($this->manager);
 
-        $this->get(ClubResource::getUrl())->assertOk()->assertSee($club->name);
-        $this->get(ClubResource::getUrl('edit', ['record' => $club]))->assertForbidden();
-        $this->get(ClubResource::getUrl('create'))->assertForbidden();
+        $this->get(VotingMemberResource::getUrl())->assertOk()->assertSee($votingMember->name);
+        $this->get(VotingMemberResource::getUrl('edit', ['record' => $votingMember]))->assertForbidden();
+        $this->get(VotingMemberResource::getUrl('create'))->assertForbidden();
     });
 
     it('verhindert auch abseits der Oberfläche, dass Verwalter:innen die Mitgliederzahl ändern', function () {
-        $club = Club::factory()->members(10)->create();
+        $votingMember = VotingMember::factory()->members(10)->create();
         $this->actingAs($this->manager);
 
-        expect(fn () => $club->update(['member_count' => 500]))->toThrow(AuthorizationException::class);
-        expect($club->fresh()->member_count)->toBe(10);
+        expect(fn () => $votingMember->update(['member_count' => 500]))->toThrow(AuthorizationException::class);
+        expect($votingMember->fresh()->member_count)->toBe(10);
+
+        $post = VotingMember::factory()->boardMember(1)->create();
+        expect(fn () => $post->update(['votes' => 5]))->toThrow(AuthorizationException::class);
+        expect(fn () => $votingMember->fresh()->update(['type' => VotingMemberType::BoardMember, 'votes' => 9]))
+            ->toThrow(AuthorizationException::class);
+        expect($post->fresh()->votes)->toBe(1);
 
         // andere Felder bleiben für das Modell selbst unberührt
-        $club->fresh()->update(['active' => false]);
-        expect($club->fresh()->active)->toBeFalse();
+        $votingMember->fresh()->update(['active' => false]);
+        expect($votingMember->fresh()->active)->toBeFalse();
     });
 });
 
 describe('Personen', function () {
     it('legt eine Person an, ordnet sie einem Verein zu und verschickt die Einladung', function () {
         Notification::fake();
-        $club = Club::factory()->create();
+        $votingMember = VotingMember::factory()->create();
         $this->actingAs($this->admin);
 
         Livewire::test(CreateUser::class)
@@ -107,13 +131,13 @@ describe('Personen', function () {
                 'name' => 'Erika Muster',
                 'email' => 'erika@example.com',
                 'role' => Role::Member,
-                'clubs' => [$club->getKey()],
+                'votingMembers' => [$votingMember->getKey()],
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
         $user = User::firstWhere('email', 'erika@example.com');
-        expect($user->represents($club))->toBeTrue();
+        expect($user->represents($votingMember))->toBeTrue();
         Notification::assertSentTo($user, ResetPassword::class);
     });
 });

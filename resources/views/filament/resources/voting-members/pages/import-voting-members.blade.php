@@ -83,7 +83,7 @@
                         <tbody>
                             @foreach ($rows as $i => $row)
                                 @php
-                                    $club = is_numeric($row['target']) ? $clubs->get((int) $row['target']) : null;
+                                    $votingMember = is_numeric($row['target']) ? $votingMembers->get((int) $row['target']) : null;
                                 @endphp
                                 <tr wire:key="row-{{ $row['line'] }}" @class([
                                     'border-b border-gray-100 align-top dark:border-white/5',
@@ -106,7 +106,7 @@
                                                     <option value="new">➕ Neu anlegen</option>
                                                     <option value="skip">Überspringen</option>
                                                     <optgroup label="Vorhandenes Mitglied">
-                                                        @foreach ($clubs as $c)
+                                                        @foreach ($votingMembers as $c)
                                                             <option value="{{ $c->id }}">{{ $c->name }}</option>
                                                         @endforeach
                                                     </optgroup>
@@ -115,10 +115,10 @@
                                             @if ($row['target'] === 'new' && $row['similar'])
                                                 <div class="mt-1 text-xs text-warning-600">Umbenannt? Ähnlich: „{{ $row['similar'] }}“</div>
                                             @endif
-                                            @if ($club && $club->name !== $row['name'])
+                                            @if ($votingMember && $votingMember->name !== $row['name'])
                                                 <label class="mt-1 flex items-center gap-2 text-xs">
                                                     <x-filament::input.checkbox wire:model.live="rows.{{ $i }}.rename" />
-                                                    <span>Namen ändern: „{{ $club->name }}“ → „{{ $row['name'] }}“</span>
+                                                    <span>Namen ändern: „{{ $votingMember->name }}“ → „{{ $row['name'] }}“</span>
                                                 </label>
                                             @endif
                                         @endif
@@ -128,12 +128,12 @@
                                             –
                                         @elseif ($row['target'] === 'new')
                                             neu · {{ $calculator->votesFor($row['count']) }} Stimme(n)
-                                        @elseif ($club)
-                                            @if ($club->member_count === $row['count'])
-                                                <span class="text-gray-500">{{ $club->member_count }} Mitglieder, unverändert</span>
+                                        @elseif ($votingMember)
+                                            @if ($votingMember->member_count === $row['count'])
+                                                <span class="text-gray-500">{{ $votingMember->member_count }} Mitglieder, unverändert</span>
                                             @else
-                                                {{ $club->member_count }} → <strong>{{ $row['count'] }}</strong> Mitglieder<br>
-                                                {{ $calculator->votesFor($club->member_count) }} → <strong>{{ $calculator->votesFor($row['count']) }}</strong> Stimme(n)
+                                                {{ $votingMember->member_count }} → <strong>{{ $row['count'] }}</strong> Mitglieder<br>
+                                                {{ $calculator->votesFor($votingMember->member_count) }} → <strong>{{ $calculator->votesFor($row['count']) }}</strong> Stimme(n)
                                             @endif
                                         @endif
                                     </td>

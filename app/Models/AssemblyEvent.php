@@ -20,7 +20,7 @@ use LogicException;
  * @property string|null $user_name
  * @property Carbon|null $created_at
  */
-#[Fillable(['type', 'club_id', 'poll_id', 'subject', 'votes', 'details', 'user_id', 'user_name'])]
+#[Fillable(['type', 'voting_member_id', 'poll_id', 'subject', 'votes', 'details', 'user_id', 'user_name'])]
 class AssemblyEvent extends Model
 {
     public const UPDATED_AT = null;

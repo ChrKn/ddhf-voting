@@ -2,17 +2,17 @@
 
 use App\Livewire\Ballot;
 use App\Models\Assembly;
-use App\Models\Club;
 use App\Models\Poll;
 use App\Models\PollParticipation;
 use App\Models\User;
+use App\Models\VotingMember;
 use App\Services\AssemblyLifecycle;
 use App\Services\PollLifecycle;
 use Livewire\Livewire;
 
 beforeEach(function () {
-    $this->club = Club::factory()->members(120)->create(['name' => 'Fechtschule Nord']);
-    $this->user = User::factory()->forClub($this->club)->create();
+    $this->votingMember = VotingMember::factory()->members(120)->create(['name' => 'Fechtschule Nord']);
+    $this->user = User::factory()->forVotingMember($this->votingMember)->create();
 
     $this->assembly = Assembly::factory()->create(['title' => 'MV 2027']);
     app(AssemblyLifecycle::class)->open($this->assembly);
@@ -41,7 +41,7 @@ it('weist auf fehlenden Check-in hin', function () {
 });
 
 it('zeigt ohne offene Abstimmung einen Hinweis', function () {
-    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->club);
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
 
     Livewire::test(Ballot::class)
         ->assertSee('3 Stimmen')
@@ -49,7 +49,7 @@ it('zeigt ohne offene Abstimmung einen Hinweis', function () {
 });
 
 it('führt durch Auswahl, Bestätigung und Abgabe', function () {
-    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->club);
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
     $poll = openPoll($this->assembly, ['title' => 'Antrag auf Beitragserhöhung']);
     $position = $poll->positions->first();
     $yes = $position->options->firstWhere('label', 'Dafür');
@@ -76,7 +76,7 @@ it('führt durch Auswahl, Bestätigung und Abgabe', function () {
 });
 
 it('zeigt bei öffentlichen Abstimmungen die eigene Wahl', function () {
-    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->club);
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
     $poll = openPoll($this->assembly, [], fn ($f) => $f->public());
     $position = $poll->positions->first();
     $no = $position->options->firstWhere('label', 'Dagegen');
@@ -90,7 +90,7 @@ it('zeigt bei öffentlichen Abstimmungen die eigene Wahl', function () {
 });
 
 it('zeigt Fehlermeldungen statt doppelt abzustimmen', function () {
-    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->club);
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
     $poll = openPoll($this->assembly);
 
     $component = Livewire::test(Ballot::class)->call('review');
@@ -104,28 +104,28 @@ it('zeigt Fehlermeldungen statt doppelt abzustimmen', function () {
 });
 
 it('lässt bei mehreren Vereinen den Verein wählen', function () {
-    $other = Club::factory()->members(10)->create(['name' => 'Fechtgilde Süd']);
-    $this->user->clubs()->attach($other);
+    $other = VotingMember::factory()->members(10)->create(['name' => 'Fechtgilde Süd']);
+    $this->user->votingMembers()->attach($other);
     app(AssemblyLifecycle::class)->checkIn($this->assembly, $other);
 
     Livewire::test(Ballot::class)
-        ->assertSet('clubId', null)
+        ->assertSet('votingMemberId', null)
         ->assertSee('Ich stimme ab für')
-        ->call('selectClub', $other->id)
-        ->assertSet('clubId', $other->id)
+        ->call('selectVotingMember', $other->id)
+        ->assertSet('votingMemberId', $other->id)
         ->assertSee('1 Stimme');
 });
 
 it('ignoriert fremde Vereine bei der Auswahl', function () {
-    $foreign = Club::factory()->create();
+    $foreign = VotingMember::factory()->create();
 
     Livewire::test(Ballot::class)
-        ->call('selectClub', $foreign->id)
-        ->assertSet('clubId', $this->club->id);
+        ->call('selectVotingMember', $foreign->id)
+        ->assertSet('votingMemberId', $this->votingMember->id);
 });
 
 it('zeigt das zuletzt veröffentlichte Ergebnis', function () {
-    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->club);
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
     $poll = openPoll($this->assembly, ['title' => 'Haushalt 2027']);
     app(PollLifecycle::class)->close($poll);
 

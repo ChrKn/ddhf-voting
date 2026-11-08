@@ -79,8 +79,8 @@ class PollResource extends Resource
                             ->label('Modus')
                             ->options(PollMode::class)
                             ->descriptions([
-                                PollMode::Secret->value => 'Es wird nur gespeichert, dass ein Mitglied abgestimmt hat.',
-                                PollMode::Public->value => 'Die Wahl jedes Mitglieds ist im Detailergebnis sichtbar.',
+                                PollMode::Secret->value => 'Es wird nur gespeichert, dass jemand abgestimmt hat, nicht wie.',
+                                PollMode::Public->value => 'Die Wahl aller Stimmberechtigten ist im Detailergebnis sichtbar.',
                             ])
                             ->default(PollMode::Secret)
                             ->required(),

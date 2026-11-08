@@ -43,11 +43,11 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * @return BelongsToMany<Club, $this>
+     * @return BelongsToMany<VotingMember, $this>
      */
-    public function clubs(): BelongsToMany
+    public function votingMembers(): BelongsToMany
     {
-        return $this->belongsToMany(Club::class);
+        return $this->belongsToMany(VotingMember::class);
     }
 
     public function isSystemAdmin(): bool
@@ -71,8 +71,8 @@ class User extends Authenticatable implements FilamentUser
         return $this->canManage();
     }
 
-    public function represents(Club $club): bool
+    public function represents(VotingMember $votingMember): bool
     {
-        return $this->clubs()->whereKey($club->getKey())->exists();
+        return $this->votingMembers()->whereKey($votingMember->getKey())->exists();
     }
 }

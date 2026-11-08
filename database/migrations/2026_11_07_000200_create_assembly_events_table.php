@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('assembly_id')->constrained()->cascadeOnDelete();
             $table->string('type');
-            $table->foreignId('club_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('voting_member_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('poll_id')->nullable()->constrained()->nullOnDelete();
             $table->string('subject')->nullable();
             $table->unsignedInteger('votes')->nullable();
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('user_name')->nullable();
             $table->timestamp('created_at')->nullable();
 
-            $table->index(['assembly_id', 'type', 'club_id']);
+            $table->index(['assembly_id', 'type', 'voting_member_id']);
         });
     }
 
