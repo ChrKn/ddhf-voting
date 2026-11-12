@@ -42,7 +42,7 @@
                     @endif
                 </p>
                 <p class="mt-1 text-sm text-neutral-500">
-                    Bitte prüfe diese Angaben vor der Versammlung. Stimmt etwas nicht, melde dich bei der Versammlungsleitung.
+                    Bitte prüfe diese Angaben vor der Versammlung. Stimmt etwas nicht, melde dich am besten <a href="mailto:info@ddhf.de">direkt bei uns</a> oder spätestens während der Versammlung bei der Versammlungsleitung.
                 </p>
             @else
                 <p class="mt-2 text-neutral-600">
