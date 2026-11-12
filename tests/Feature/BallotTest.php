@@ -40,6 +40,27 @@ it('weist auf fehlenden Check-in hin', function () {
         ->assertSee('noch nicht eingecheckt');
 });
 
+it('zeigt vor dem Check-in die hinterlegten Stimmen und Mitglieder', function () {
+    Livewire::test(Ballot::class)
+        ->assertSeeInOrder(['noch nicht eingecheckt', 'Hinterlegt', '3 Stimmen', '(120 Mitglieder)', 'Bitte prüfe']);
+});
+
+it('zeigt die hinterlegten Stimmen auch ohne laufende Versammlung', function () {
+    app(AssemblyLifecycle::class)->close($this->assembly);
+
+    Livewire::test(Ballot::class)
+        ->assertSeeInOrder(['Aktuell läuft keine Versammlung', '3 Stimmen', '(120 Mitglieder)']);
+});
+
+it('zeigt vor dem Check-in bei Präsidiumsposten nur die Stimmen', function () {
+    $post = VotingMember::firstWhere('name', 'Präsident:in');
+    $this->user->votingMembers()->sync([$post->id]);
+
+    Livewire::test(Ballot::class)
+        ->assertSee('1 Stimme')
+        ->assertDontSee('Mitglied');
+});
+
 it('zeigt neben den Stimmen die Mitgliederzahl vom Check-in', function () {
     app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
 

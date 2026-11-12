@@ -12,6 +12,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   board post.
 - The ballot and the attendance list show, next to a member's votes, the member count they were
   calculated from. It is frozen at check-in together with the votes.
+- Before check-in, and when no assembly is running, the ballot shows the votes (and, for members,
+  the member count) currently on record, so delegates can check them ahead of the assembly.
 - The assembly chair can correct a wrong member count (or a board post's votes) during the
   assembly, with a mandatory reason, while no poll is open. The correction updates the master
   data and the frozen votes; closed polls stay as counted. The minutes list old and new values,

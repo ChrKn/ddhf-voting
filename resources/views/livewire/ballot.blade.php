@@ -22,12 +22,27 @@
         <section class="card">
             <h2 class="text-lg font-semibold">{{ $this->votingMember->name }}</h2>
 
-            @if (! $this->assembly)
-                <p class="mt-2">Aktuell läuft keine Versammlung.</p>
-            @elseif ($this->votes === null)
-                <p class="mt-2">
-                    Zur <strong>{{ $this->assembly->title }}</strong> ist {{ $this->votingMember->name }} noch nicht eingecheckt.
-                    Bitte melde dich bei der Versammlungsleitung.
+            @if (! $this->assembly || $this->votes === null)
+                @if (! $this->assembly)
+                    <p class="mt-2">Aktuell läuft keine Versammlung.</p>
+                @else
+                    <p class="mt-2">
+                        Zur <strong>{{ $this->assembly->title }}</strong> ist {{ $this->votingMember->name }} noch nicht eingecheckt.
+                        Bitte melde dich bei der Versammlungsleitung.
+                    </p>
+                @endif
+
+                {{-- Vor dem Check-in die aktuellen Stammdaten zum Prüfen; beim Check-in werden sie eingefroren --}}
+                @php($memberCount = $this->votingMember->isBoardMember() ? null : $this->votingMember->member_count)
+                <p class="mt-3 text-neutral-600">
+                    Hinterlegt:
+                    <strong class="text-neutral-900">{{ $this->votingMember->votes }} {{ $this->votingMember->votes === 1 ? 'Stimme' : 'Stimmen' }}</strong>
+                    @if ($memberCount !== null)
+                        ({{ $memberCount }} {{ $memberCount === 1 ? 'Mitglied' : 'Mitglieder' }})
+                    @endif
+                </p>
+                <p class="mt-1 text-sm text-neutral-500">
+                    Bitte prüfe diese Angaben vor der Versammlung. Stimmt etwas nicht, melde dich bei der Versammlungsleitung.
                 </p>
             @else
                 <p class="mt-2 text-neutral-600">
