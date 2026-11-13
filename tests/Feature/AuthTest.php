@@ -69,6 +69,53 @@ it('verschickt einen Reset-Link, ohne zu verraten, ob die Adresse existiert', fu
     Notification::assertSentTo($user, ResetPassword::class);
 });
 
+it('zeigt das Formular für einen gültigen Link', function () {
+    $user = User::factory()->create();
+    $token = Password::createToken($user);
+
+    $this->get(route('password.reset', ['token' => $token, 'email' => $user->email]))
+        ->assertOk()
+        ->assertSee('Passwort speichern');
+});
+
+it('lehnt einen abgelaufenen Link schon beim Öffnen ab', function () {
+    $user = User::factory()->create();
+    $token = Password::createToken($user);
+
+    $this->travel(25)->hours();
+
+    $this->get(route('password.reset', ['token' => $token, 'email' => $user->email]))
+        ->assertRedirect(route('password.request'))
+        ->assertSessionHasErrors('email');
+});
+
+it('lehnt einen bereits benutzten Link beim Öffnen ab', function () {
+    $user = User::factory()->create();
+    $token = Password::createToken($user);
+
+    $this->post(route('password.update'), [
+        'token' => $token,
+        'email' => $user->email,
+        'password' => 'ein-neues-passwort',
+        'password_confirmation' => 'ein-neues-passwort',
+    ])->assertRedirect(route('login'));
+
+    $this->get(route('password.reset', ['token' => $token, 'email' => $user->email]))
+        ->assertRedirect(route('password.request'))
+        ->assertSessionHasErrors('email');
+});
+
+it('macht einen älteren Link ungültig, sobald ein neuer angefordert wird', function () {
+    $user = User::factory()->create();
+    $old = Password::createToken($user);
+    $new = Password::createToken($user);
+
+    $this->get(route('password.reset', ['token' => $old, 'email' => $user->email]))
+        ->assertRedirect(route('password.request'));
+    $this->get(route('password.reset', ['token' => $new, 'email' => $user->email]))
+        ->assertOk();
+});
+
 it('setzt ein neues Passwort über den Link', function () {
     $user = User::factory()->create();
     $token = Password::createToken($user);

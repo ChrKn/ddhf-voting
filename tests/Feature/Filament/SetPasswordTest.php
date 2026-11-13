@@ -7,6 +7,7 @@ use Filament\Actions\Testing\TestAction;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 use Livewire\Livewire;
 
 it('erzeugt ein diktierbares Passwort und erzwingt die Änderung', function () {
@@ -20,6 +21,15 @@ it('erzeugt ein diktierbares Passwort und erzwingt die Änderung', function () {
         ->and($member->must_change_password)->toBeTrue()
         // Gilt erst als gesetzt, wenn die Person ein eigenes Passwort vergibt
         ->and($member->email_verified_at)->toBeNull();
+});
+
+it('macht einen noch offenen Einladungslink ungültig', function () {
+    $member = User::factory()->unverified()->create();
+    $token = Password::createToken($member);
+
+    app(SetTemporaryPassword::class)($member, User::factory()->manager()->create());
+
+    expect(Password::tokenExists($member, $token))->toBeFalse();
 });
 
 it('lässt Verwalter:innen Vertreter:innen ein vorläufiges Passwort geben', function () {

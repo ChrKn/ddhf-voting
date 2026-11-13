@@ -35,8 +35,19 @@ class PasswordResetController extends Controller
         return back()->with('status', 'Falls die Adresse bekannt ist, wurde ein Link zum Zurücksetzen verschickt.');
     }
 
-    public function edit(Request $request, string $token): View
+    public function edit(Request $request, string $token): View|RedirectResponse
     {
+        // Abgelaufene oder bereits benutzte Links gar nicht erst als Formular
+        // anzeigen, sondern direkt zur Anforderung eines neuen Links schicken.
+        $email = (string) $request->query('email');
+        $user = $email !== '' ? Password::getUser(['email' => $email]) : null;
+
+        if (! $user || ! Password::tokenExists($user, $token)) {
+            return redirect()->route('password.request')
+                ->withInput(['email' => $email])
+                ->withErrors(['email' => __(Password::INVALID_TOKEN)]);
+        }
+
         return view('auth.reset-password', [
             'token' => $token,
             'email' => $request->query('email'),

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 /**
@@ -27,6 +28,9 @@ class SetTemporaryPassword
             'must_change_password' => true,
             'remember_token' => Str::random(60),
         ])->save();
+
+        // Ein noch offener Einladungs-/Reset-Link soll danach nicht mehr funktionieren.
+        Password::deleteToken($user);
 
         Log::info('Vorläufiges Passwort vergeben', ['user' => $user->email, 'by' => $by->email]);
 

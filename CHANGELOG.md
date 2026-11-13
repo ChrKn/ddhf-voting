@@ -19,6 +19,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   data and the frozen votes; closed polls stay as counted. The minutes list old and new values,
   the reason and who made the correction.
 
+### Changed
+- Password reset and invitation links are valid for 24 hours instead of one hour; the mail
+  states the validity in hours.
+
+### Fixed
+- An expired or already used password link no longer shows the form for setting a password.
+  It redirects to "Passwort vergessen" with an error message instead.
+- Setting a temporary password invalidates any password link that is still open.
+
 ## 1.0.0 - 2026-11-08
 
 First release, rebuilt on Laravel; replaces the plain-PHP system that was originally meant 
