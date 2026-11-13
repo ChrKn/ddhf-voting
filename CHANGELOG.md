@@ -4,7 +4,7 @@ Notable changes to the DDHF MV Abstimmungssystem.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## 1.1.0 - 2026-11-13
 
 ### Added
 - The eight board posts under § 19 of the statutes are created by a migration, one vote each.
@@ -18,6 +18,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   assembly, with a mandatory reason, while no poll is open. The correction updates the master
   data and the frozen votes; closed polls stay as counted. The minutes list old and new values,
   the reason and who made the correction.
+- The footer shows the version, read from the topmost release in this file, and links to this
+  file as a page at `/changelog`.
 
 ### Changed
 - Password reset and invitation links are valid for 24 hours instead of one hour; the mail

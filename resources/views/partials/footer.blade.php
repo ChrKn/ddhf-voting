@@ -9,4 +9,13 @@
         –
         <a href="https://www.ddhf.de/datenschutz/" target="_blank" rel="noopener" class="underline">Datenschutz</a>
     </div>
+    {{-- Aus CHANGELOG.md gelesen - siehe App\Support\Changelog. Weggelassen statt geraten, wenn
+         die Datei kein Release nennt. --}}
+    @php($version = \App\Support\Changelog::version())
+    @if ($version)
+        <div class="mt-2 tabular-nums">
+            Version {{ $version }}
+            · <a href="{{ route('changelog') }}" lang="en" class="underline">Changelog</a>
+        </div>
+    @endif
 </footer>

@@ -4,6 +4,7 @@ use App\Http\Controllers\AssemblyExportController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\ChangelogController;
 use App\Http\Middleware\EnsurePasswordIsChanged;
 use App\Livewire\Ballot;
 use App\Livewire\ResultScreen;
@@ -20,6 +21,9 @@ Route::middleware('guest')->group(function () {
     Route::get('/passwort-setzen/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
     Route::post('/passwort-setzen', [PasswordResetController::class, 'update'])->name('password.update');
 });
+
+// CHANGELOG.md als Seite, verlinkt von der Version im Footer; auch ohne Login erreichbar
+Route::get('/changelog', ChangelogController::class)->name('changelog');
 
 // Beamer-Ansicht ohne Login; geschützt durch den zufälligen Token im Link
 Route::livewire('/screen/{token}', ResultScreen::class)
