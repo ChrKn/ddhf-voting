@@ -4,6 +4,13 @@ Notable changes to the DDHF MV Abstimmungssystem.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.1.1 - 2026-11-13
+
+### Fixed
+- A member's votes are `ceil(members / 50)`, as the statutes give one vote per started 50
+  individual members. The old formula `floor(members / 50) + 1` gave one vote too many at exactly
+  50, 100, 150, … members, and one vote at 0 members.
+
 ## 1.1.0 - 2026-11-13
 
 ### Added

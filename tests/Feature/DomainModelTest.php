@@ -54,7 +54,7 @@ it('gibt Präsidiumsposten ihre feste Stimmenzahl, unabhängig von der Formel', 
         ->and($post->votes)->toBe(2)
         ->and($post->member_count)->toBeNull();
 
-    config(['voting.votes_base' => 10]);
+    config(['voting.votes_divisor' => 1]);
     expect($post->fresh()->votes)->toBe(2);
 });
 

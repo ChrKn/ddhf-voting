@@ -117,6 +117,6 @@ it('übernimmt beim erneuten Check-in die Stimmenzahl vom ersten Check-in', func
     $this->assemblies->open($next);
     $this->assemblies->checkIn($next, $this->votingMember);
 
-    expect($this->assemblies->votesOf($next, $this->votingMember))->toBe(9)
+    expect($this->assemblies->votesOf($next, $this->votingMember))->toBe(8)
         ->and($this->assemblies->attendanceOf($next, $this->votingMember)->member_count)->toBe(400);
 });
