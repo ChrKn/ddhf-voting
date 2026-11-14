@@ -53,7 +53,9 @@ it('bietet Verwalter:innen die Aktion nicht bei Admins und Verwalter:innen an', 
         ->assertActionVisible(TestAction::make('setPassword')->table($member))
         ->assertActionHidden(TestAction::make('setPassword')->table($admin))
         ->assertActionHidden(TestAction::make('setPassword')->table($manager))
-        ->assertActionHidden(TestAction::make('edit')->table($member));
+        ->assertActionVisible(TestAction::make('edit')->table($member))
+        ->assertActionHidden(TestAction::make('edit')->table($admin))
+        ->assertActionHidden(TestAction::make('edit')->table($manager));
 });
 
 it('lässt Verwalter:innen per Sammelaktion nur Vertreter:innen einladen', function () {

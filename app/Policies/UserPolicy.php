@@ -7,8 +7,10 @@ use App\Models\User;
 
 /**
  * Personen und Rollen verwaltet der Systemadmin. Verwalter:innen sehen die
- * Liste und können Vertreter:innen einladen oder ihnen ein vorläufiges
- * Passwort geben, z.B. wenn bei der Versammlung jemand nicht hereinkommt.
+ * Liste, können Vertreter:innen anlegen, bearbeiten (z. B. mit Stimmberechtigten
+ * verknüpfen), einladen oder ihnen ein vorläufiges Passwort geben, z.B. wenn bei
+ * der Versammlung jemand nicht hereinkommt. Rollen vergeben sie nicht: Was sie
+ * anlegen, ist immer Vertreter:in.
  */
 class UserPolicy
 {
@@ -24,12 +26,18 @@ class UserPolicy
 
     public function create(User $user): bool
     {
-        return $user->isSystemAdmin();
+        return $user->canManage();
     }
 
     public function update(User $user, User $model): bool
     {
-        return $user->isSystemAdmin();
+        return $user->isSystemAdmin() || ($user->isManager() && $model->role === Role::Member);
+    }
+
+    /** Rollen vergibt nur der Systemadmin, und die eigene Rolle niemand (sonst sperrt man sich aus) */
+    public function changeRole(User $user, ?User $model = null): bool
+    {
+        return $user->isSystemAdmin() && ! ($model?->is($user) ?? false);
     }
 
     public function delete(User $user, User $model): bool

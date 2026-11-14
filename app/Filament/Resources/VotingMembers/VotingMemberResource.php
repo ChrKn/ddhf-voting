@@ -150,11 +150,21 @@ class VotingMemberResource extends Resource
         return ($type instanceof VotingMemberType ? $type : VotingMemberType::tryFrom((string) $type)) === VotingMemberType::BoardMember;
     }
 
+    /**
+     * Beim Anlegen gehören die Stimmen dazu, das darf jede:r, die anlegen darf. Bei
+     * einem bestehenden Eintrag nur, wer Stimmen ändern darf.
+     */
     public static function canEditVotes(?VotingMember $record): bool
     {
         $user = auth()->user();
 
-        return $user !== null && $user->can('updateVotes', $record ?? VotingMember::class);
+        if ($user === null) {
+            return false;
+        }
+
+        return $record === null
+            ? $user->can('create', VotingMember::class)
+            : $user->can('updateVotes', $record);
     }
 
     public static function getPages(): array

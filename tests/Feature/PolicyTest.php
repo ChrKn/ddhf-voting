@@ -18,16 +18,23 @@ it('erlaubt nur dem Systemadmin, die Mitgliederzahl zu ändern', function () {
     expect($this->admin->can('updateVotes', $this->votingMember))->toBeTrue()
         ->and($this->manager->can('updateVotes', $this->votingMember))->toBeFalse()
         ->and($this->member->can('updateVotes', $this->votingMember))->toBeFalse()
-        ->and($this->manager->can('update', $this->votingMember))->toBeFalse()
+        ->and($this->manager->can('update', $this->votingMember))->toBeTrue()
+        ->and($this->manager->can('create', VotingMember::class))->toBeTrue()
+        ->and($this->manager->can('delete', $this->votingMember))->toBeFalse()
         ->and($this->manager->can('viewAny', VotingMember::class))->toBeTrue()
         ->and($this->member->can('viewAny', VotingMember::class))->toBeFalse();
 });
 
-it('erlaubt nur dem Systemadmin, Personen zu verwalten', function () {
+it('lässt Verwalter:innen nur Vertreter:innen verwalten, Rollen nur den Systemadmin', function () {
     expect($this->admin->can('create', User::class))->toBeTrue()
         ->and($this->manager->can('viewAny', User::class))->toBeTrue()
-        ->and($this->manager->can('create', User::class))->toBeFalse()
-        ->and($this->manager->can('update', $this->member))->toBeFalse()
+        ->and($this->manager->can('create', User::class))->toBeTrue()
+        ->and($this->manager->can('update', $this->member))->toBeTrue()
+        ->and($this->manager->can('update', $this->admin))->toBeFalse()
+        ->and($this->manager->can('delete', $this->member))->toBeFalse()
+        ->and($this->manager->can('changeRole', [User::class, $this->member]))->toBeFalse()
+        ->and($this->admin->can('changeRole', [User::class, $this->member]))->toBeTrue()
+        ->and($this->admin->can('changeRole', [User::class, $this->admin]))->toBeFalse()
         ->and($this->member->can('viewAny', User::class))->toBeFalse()
         ->and($this->admin->can('delete', $this->admin))->toBeFalse();
 });

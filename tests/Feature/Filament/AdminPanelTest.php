@@ -8,6 +8,7 @@ use App\Filament\Resources\Polls\Pages\CreatePoll;
 use App\Filament\Resources\Polls\Pages\EditPoll;
 use App\Filament\Resources\Polls\PollResource;
 use App\Filament\Resources\Users\Pages\CreateUser;
+use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\UserResource;
 use App\Filament\Resources\VotingMembers\Pages\CreateVotingMember;
 use App\Filament\Resources\VotingMembers\Pages\EditVotingMember;
@@ -51,13 +52,15 @@ describe('Zugang', function () {
             ->assertSee('target="_blank"', false);
     });
 
-    it('lässt nur den Systemadmin Personen bearbeiten, Verwalter:innen nur ansehen', function () {
+    it('lässt Verwalter:innen Vertreter:innen bearbeiten, andere Konten nicht', function () {
         $person = User::factory()->create();
 
         $this->actingAs($this->admin)->get(UserResource::getUrl('edit', ['record' => $person]))->assertOk();
         $this->actingAs($this->manager)->get(UserResource::getUrl())->assertOk();
-        $this->actingAs($this->manager)->get(UserResource::getUrl('create'))->assertForbidden();
-        $this->actingAs($this->manager)->get(UserResource::getUrl('edit', ['record' => $person]))->assertForbidden();
+        $this->actingAs($this->manager)->get(UserResource::getUrl('create'))->assertOk();
+        $this->actingAs($this->manager)->get(UserResource::getUrl('edit', ['record' => $person]))->assertOk();
+        $this->actingAs($this->manager)->get(UserResource::getUrl('edit', ['record' => $this->admin]))->assertForbidden();
+        $this->actingAs($this->manager)->get(UserResource::getUrl('edit', ['record' => User::factory()->manager()->create()]))->assertForbidden();
     });
 });
 
@@ -103,13 +106,42 @@ describe('Vereine und Mitgliederzahl', function () {
         expect($votingMember->fresh()->member_count)->toBe(120);
     });
 
-    it('zeigt Verwalter:innen die Vereinsliste, aber keine Bearbeitung', function () {
-        $votingMember = VotingMember::factory()->create();
+    it('lässt Verwalter:innen Vereine mit Mitgliederzahl und Personen anlegen', function () {
+        $person = User::factory()->create();
+        $this->actingAs($this->manager);
+
+        $this->get(VotingMemberResource::getUrl('create'))->assertOk();
+
+        Livewire::test(CreateVotingMember::class)
+            ->assertFormFieldIsEnabled('member_count')
+            ->fillForm(['name' => 'Fechtschule Süd', 'member_count' => 120, 'active' => true, 'users' => [$person->getKey()]])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $votingMember = VotingMember::firstWhere('name', 'Fechtschule Süd');
+        expect($votingMember->member_count)->toBe(120)
+            ->and($votingMember->votes)->toBe(3)
+            ->and($person->represents($votingMember))->toBeTrue();
+    });
+
+    it('lässt Verwalter:innen Personen verknüpfen, aber nicht die Mitgliederzahl ändern', function () {
+        $votingMember = VotingMember::factory()->members(10)->create();
+        $person = User::factory()->create();
         $this->actingAs($this->manager);
 
         $this->get(VotingMemberResource::getUrl())->assertOk()->assertSee($votingMember->name);
-        $this->get(VotingMemberResource::getUrl('edit', ['record' => $votingMember]))->assertForbidden();
-        $this->get(VotingMemberResource::getUrl('create'))->assertForbidden();
+        $this->get(VotingMemberResource::getUrl('edit', ['record' => $votingMember]))->assertOk();
+        $this->get(VotingMemberResource::getUrl('import'))->assertForbidden();
+
+        Livewire::test(EditVotingMember::class, ['record' => $votingMember->getRouteKey()])
+            ->assertFormFieldIsDisabled('member_count')
+            ->assertFormFieldIsDisabled('type')
+            ->fillForm(['users' => [$person->getKey()]])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        expect($person->represents($votingMember))->toBeTrue()
+            ->and($votingMember->fresh()->member_count)->toBe(10);
     });
 
     it('verhindert auch abseits der Oberfläche, dass Verwalter:innen die Mitgliederzahl ändern', function () {
@@ -150,6 +182,43 @@ describe('Personen', function () {
         $user = User::firstWhere('email', 'erika@example.com');
         expect($user->represents($votingMember))->toBeTrue();
         Notification::assertSentTo($user, ResetPassword::class);
+    });
+
+    it('lässt Verwalter:innen nur Vertreter:innen anlegen und verknüpfen', function () {
+        Notification::fake();
+        $votingMember = VotingMember::factory()->create();
+        $this->actingAs($this->manager);
+
+        Livewire::test(CreateUser::class)
+            ->assertFormFieldIsDisabled('role')
+            ->fillForm([
+                'name' => 'Max Muster',
+                'email' => 'max@example.com',
+                'role' => Role::SystemAdmin,
+                'votingMembers' => [$votingMember->getKey()],
+            ])
+            ->call('create')
+            ->assertHasNoFormErrors();
+
+        $user = User::firstWhere('email', 'max@example.com');
+        expect($user->role)->toBe(Role::Member)
+            ->and($user->represents($votingMember))->toBeTrue();
+        Notification::assertSentTo($user, ResetPassword::class);
+    });
+
+    it('lässt Verwalter:innen bestehende Vertreter:innen verknüpfen, aber nicht befördern', function () {
+        $person = User::factory()->create();
+        $votingMember = VotingMember::factory()->create();
+        $this->actingAs($this->manager);
+
+        Livewire::test(EditUser::class, ['record' => $person->getRouteKey()])
+            ->assertFormFieldIsDisabled('role')
+            ->fillForm(['votingMembers' => [$votingMember->getKey()], 'role' => Role::Manager])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        expect($person->fresh()->role)->toBe(Role::Member)
+            ->and($person->represents($votingMember))->toBeTrue();
     });
 });
 

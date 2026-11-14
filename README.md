@@ -152,8 +152,12 @@ MAIL_RETURN_PATH="person@ddhf.de"
 **Wenn eine Mail partout nicht ankommt:** Systemadmin und Verwalter:innen können unter *Personen*
 bei Vertreter:innen „Passwort festlegen“ wählen. Die App erzeugt ein vorläufiges Passwort
 (z.B. `kmtp-4z9w-rxa3`) und zeigt es einmalig an; bitte telefonisch oder persönlich weitergeben.
-Beim ersten Login muss die Person ein eigenes Passwort festlegen. Verwalter:innen sehen die
-Personenliste, können aber nichts bearbeiten und nur Vertreter:innen einladen.
+Beim ersten Login muss die Person ein eigenes Passwort festlegen.
+
+**Verwalter:innen** können einzelne Stimmberechtigte (mit Mitgliederzahl bzw. festen Stimmen) und
+Vertreter:innen anlegen und miteinander verknüpfen, auch nachträglich. Die Stimmen eines
+bestehenden Eintrags ändern, importieren, löschen und Rollen vergeben kann nur der Systemadmin;
+Admin- und Verwalterkonten können Verwalter:innen weder bearbeiten noch einladen.
 
 ## Erstbefüllung
 

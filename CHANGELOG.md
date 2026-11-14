@@ -4,6 +4,14 @@ Notable changes to the DDHF MV Abstimmungssystem.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.2.0 - 2026-11-14
+
+### Added
+- Managers can create voting members (with member count, or votes for a board post) and
+  delegates one at a time, and link them to each other, also afterwards. Changing the votes of an
+  existing voting member, importing, deleting and assigning roles remain with the system admin;
+  people created by a manager are always delegates, and managers can only edit delegates.
+
 ## 1.1.1 - 2026-11-13
 
 ### Fixed

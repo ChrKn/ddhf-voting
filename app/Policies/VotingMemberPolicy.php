@@ -6,9 +6,10 @@ use App\Models\User;
 use App\Models\VotingMember;
 
 /**
- * Stimmberechtigte pflegt nur der Systemadmin. Verwalter:innen dürfen sie sehen
- * (für Check-in und Versammlungsleitung), aber nicht ändern – insbesondere
- * nicht die Stimmen: Mitgliederzahl, feste Stimmen eines Präsidiumspostens, Typ.
+ * Verwalter:innen dürfen Stimmberechtigte einzeln anlegen (samt Mitgliederzahl bzw.
+ * fester Stimmen) und bestehende bearbeiten, z. B. um Personen zu verknüpfen. Die
+ * Stimmen eines bestehenden Eintrags – Mitgliederzahl, feste Stimmen eines
+ * Präsidiumspostens, Typ – ändert danach nur der Systemadmin, ebenso Import und Löschen.
  */
 class VotingMemberPolicy
 {
@@ -24,12 +25,12 @@ class VotingMemberPolicy
 
     public function create(User $user): bool
     {
-        return $user->isSystemAdmin();
+        return $user->canManage();
     }
 
     public function update(User $user, VotingMember $votingMember): bool
     {
-        return $user->isSystemAdmin();
+        return $user->canManage();
     }
 
     public function updateVotes(User $user, ?VotingMember $votingMember = null): bool

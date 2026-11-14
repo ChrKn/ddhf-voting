@@ -65,8 +65,10 @@ class UserResource extends Resource
                             ->options(Role::class)
                             ->default(Role::Member)
                             ->required()
-                            // Eigene Rolle nicht änderbar, damit sich niemand aussperrt
-                            ->disabled(fn (?User $record) => $record?->is(auth()->user()) ?? false),
+                            ->selectablePlaceholder(false)
+                            // Verwalter:innen legen nur Vertreter:innen an; die eigene Rolle ändert niemand
+                            ->disabled(fn (?User $record) => ! static::canChangeRole($record))
+                            ->dehydrated(fn (?User $record) => static::canChangeRole($record)),
                         Select::make('votingMembers')
                             ->label('Vertritt')
                             ->relationship('votingMembers', 'name')
@@ -75,6 +77,13 @@ class UserResource extends Resource
                             ->preload(),
                     ]),
             ]);
+    }
+
+    public static function canChangeRole(?User $record): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && $user->can('changeRole', [User::class, $record]);
     }
 
     public static function table(Table $table): Table
