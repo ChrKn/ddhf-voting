@@ -210,9 +210,13 @@ class Ballot extends Component
     {
         $this->syncBallotWithPoll();
 
+        $result = $this->published ? PollResult::for($this->published) : null;
+
         return view('livewire.ballot', [
             'votingMembers' => $this->votingMembers(),
-            'publishedResult' => $this->published ? PollResult::for($this->published)->positions() : null,
+            'publishedResult' => $result?->positions(),
+            // Wer wie gestimmt hat, nur bei öffentlichen Abstimmungen (sonst leer)
+            'publishedDetails' => $result?->details() ?? [],
         ]);
     }
 

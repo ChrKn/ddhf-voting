@@ -146,6 +146,37 @@
                 <section class="card">
                     <h2 class="font-semibold">Letztes Ergebnis: {{ $this->published->title }}</h2>
                     @include('partials.result', ['positions' => $publishedResult, 'showTitles' => $this->published->positions->count() > 1])
+
+                    @if ($publishedDetails)
+                        {{-- wire:ignore.self: Das Polling soll die aufgeklappte Liste nicht wieder zuklappen --}}
+                        <details wire:key="details-{{ $this->published->id }}" wire:ignore.self class="mt-4 border-t border-neutral-200 pt-3">
+                            <summary class="cursor-pointer font-semibold">Detailergebnisse</summary>
+                            <div class="mt-2 overflow-x-auto">
+                                <table class="w-full text-left text-sm">
+                                    <thead>
+                                        <tr class="border-b border-neutral-200">
+                                            <th class="py-2 pr-4">Stimmberechtigte</th>
+                                            <th class="py-2 pr-4">Stimmen</th>
+                                            <th class="py-2">Abgestimmt mit</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($publishedDetails as $row)
+                                            <tr class="border-b border-neutral-100 align-top">
+                                                <td class="py-2 pr-4">{{ $row['votingMember'] }}</td>
+                                                <td class="py-2 pr-4 tabular-nums">{{ $row['votes'] }}</td>
+                                                <td class="py-2">
+                                                    @foreach ($row['choices'] as $position => $label)
+                                                        <div>@if (count($row['choices']) > 1)<span class="text-neutral-500">{{ $position }}:</span> @endif{{ $label }}</div>
+                                                    @endforeach
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </details>
+                    @endif
                 </section>
             @endif
         @endif

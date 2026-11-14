@@ -11,6 +11,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   delegates one at a time, and link them to each other, also afterwards. Changing the votes of an
   existing voting member, importing, deleting and assigning roles remain with the system admin;
   people created by a manager are always delegates, and managers can only edit delegates.
+- For a published public poll, the ballot shows below the result a collapsible "Detailergebnisse"
+  list of who voted how, as the admin panel and the minutes already do. The beamer screen keeps
+  showing the totals only.
 
 ## 1.1.1 - 2026-11-13
 

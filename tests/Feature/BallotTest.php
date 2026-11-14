@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\CastVote;
 use App\Livewire\Ballot;
 use App\Models\Assembly;
 use App\Models\Poll;
@@ -142,6 +143,32 @@ it('lässt Verwalter:innen, die einen Verein vertreten, mit demselben Konto abst
         ->user_id->toBe($manager->id)
         ->voting_member_id->toBe($this->votingMember->id)
         ->votes->toBe(3);
+});
+
+it('zeigt bei öffentlichen Abstimmungen nach der Freigabe, wer wie gestimmt hat', function () {
+    $other = VotingMember::factory()->members(30)->create(['name' => 'Säbelclub Süd']);
+    $otherRep = User::factory()->forVotingMember($other)->create();
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $this->votingMember);
+    app(AssemblyLifecycle::class)->checkIn($this->assembly, $other);
+
+    foreach (['public' => 'Offener Antrag', 'secret' => 'Geheimer Antrag'] as $mode => $title) {
+        $poll = openPoll($this->assembly, ['title' => $title, 'mode' => $mode]);
+        $position = $poll->positions->first();
+        app(CastVote::class)->handle($this->user, $this->votingMember, $poll, [$position->id => $position->options->firstWhere('label', 'Dafür')->id]);
+        app(CastVote::class)->handle($otherRep, $other, $poll, [$position->id => $position->options->firstWhere('label', 'Dagegen')->id]);
+        app(PollLifecycle::class)->close($poll);
+        app(PollLifecycle::class)->publish($poll);
+
+        $mode === 'public'
+            ? Livewire::test(Ballot::class)
+                ->assertSee('Letztes Ergebnis: Offener Antrag')
+                ->assertSee('Detailergebnisse')
+                ->assertSeeInOrder(['Fechtschule Nord', 'Dafür', 'Säbelclub Süd', 'Dagegen'])
+            : Livewire::test(Ballot::class)
+                ->assertSee('Letztes Ergebnis: Geheimer Antrag')
+                ->assertDontSee('Detailergebnisse')
+                ->assertDontSee('Säbelclub Süd');
+    }
 });
 
 it('zeigt bei öffentlichen Abstimmungen die eigene Wahl', function () {
