@@ -61,7 +61,7 @@ it('steuert eine komplette Versammlung', function () {
 
     $page->call('closePoll', $this->poll->id)
         ->assertSee('Ergebnis')
-        ->assertSee('100,0 %');
+        ->assertSee('100,00 %');
     expect($this->poll->fresh()->status)->toBe(PollStatus::Closed);
 
     $page->call('publishPoll', $this->poll->id);

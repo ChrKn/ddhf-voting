@@ -4,6 +4,14 @@ Notable changes to the DDHF MV Abstimmungssystem.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).  
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Fixed
+- Result percentages are shown with two decimals and always add up to exactly 100 % per
+  position, on the ballot, the beamer screen, the admin panel and in the minutes. Each share is
+  rounded half up; where that would not give 100 %, the missing or extra 0.01 goes to the shares
+  with the largest rounding remainder (largest remainder method).
+
 ## 1.2.0 - 2026-11-14
 
 ### Added

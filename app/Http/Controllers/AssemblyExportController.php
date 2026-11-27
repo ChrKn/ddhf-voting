@@ -62,7 +62,7 @@ class AssemblyExportController extends Controller
                             $position['title'],
                             $option['label'].($option['club_hint'] ? " ({$option['club_hint']})" : ''),
                             $option['votes'],
-                            $option['is_abstention'] ? '' : number_format($option['share'], 1, ',', ''),
+                            $option['is_abstention'] ? '' : number_format($option['share'], 2, ',', ''),
                         ]);
                     }
                 }
