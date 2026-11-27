@@ -103,6 +103,7 @@ class PollResult
             $total = $options->sum('votes');
             // Anteil bezogen auf gültige Stimmen ohne Enthaltungen
             $valid = $options->where('is_abstention', false)->sum('votes');
+            $shares = self::shares($options->reject(fn (array $o) => $o['is_abstention'])->pluck('votes', 'option_id')->all());
 
             $result[] = [
                 'position_id' => (int) $position->getKey(),
@@ -110,10 +111,7 @@ class PollResult
                 'total' => $total,
                 'valid' => $valid,
                 'options' => $options
-                    ->map(fn (array $o) => [
-                        ...$o,
-                        'share' => (! $o['is_abstention'] && $valid > 0) ? round($o['votes'] / $valid * 100, 1) : 0.0,
-                    ])
+                    ->map(fn (array $o) => [...$o, 'share' => $shares[$o['option_id']] ?? 0.0])
                     ->sortBy([['is_abstention', 'asc'], ['votes', 'desc']])
                     ->values()
                     ->all(),
@@ -121,6 +119,42 @@ class PollResult
         }
 
         return $result;
+    }
+
+    /**
+     * Prozentanteile mit zwei Nachkommastellen, die zusammen exakt 100 ergeben
+     * (Verfahren der größten Reste). Gerechnet wird ganzzahlig in Hundertstel-
+     * prozent: Jeder Anteil wird abgerundet, die fehlenden Hundertstel erhalten
+     * die Anteile mit den größten abgeschnittenen Resten. Das entspricht der
+     * kaufmännischen Rundung, weicht davon nur ab, wo sonst nicht 100 heraus-
+     * käme, und dann höchstens um 0,01. Bei gleichem Rest geht der Ausgleich
+     * an die Option mit mehr Stimmen, dann an die zuerst genannte.
+     *
+     * @param  array<int|string, int>  $votes  Stimmen je Schlüssel
+     * @return array<int|string, float> Anteil in Prozent je Schlüssel, alle 0.0 ohne Stimmen
+     */
+    public static function shares(array $votes): array
+    {
+        $valid = array_sum($votes);
+        if ($valid <= 0) {
+            return array_map(fn () => 0.0, $votes);
+        }
+
+        $hundredths = [];
+        $remainders = [];
+        foreach ($votes as $key => $count) {
+            $hundredths[$key] = intdiv($count * 10000, $valid);
+            $remainders[] = ['key' => $key, 'rest' => ($count * 10000) % $valid, 'votes' => $count];
+        }
+
+        usort($remainders, fn (array $a, array $b) => [$b['rest'], $b['votes']] <=> [$a['rest'], $a['votes']]);
+
+        $missing = 10000 - array_sum($hundredths);
+        for ($i = 0; $i < $missing; $i++) {
+            $hundredths[$remainders[$i]['key']]++;
+        }
+
+        return array_map(fn (int $h) => (float) ($h / 100), $hundredths);
     }
 
     /**

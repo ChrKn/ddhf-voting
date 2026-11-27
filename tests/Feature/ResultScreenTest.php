@@ -64,5 +64,5 @@ it('zeigt das Ergebnis nach der Freigabe', function () {
     screen($this->assembly)
         ->assertSee('Dafür')
         ->assertSee('3 Stimmen')
-        ->assertSee('100,0 %');
+        ->assertSee('100,00 %');
 });

@@ -18,7 +18,7 @@
                             <span class="tabular-nums">
                                 {{ $option['votes'] }} {{ $option['votes'] === 1 ? 'Stimme' : 'Stimmen' }}
                                 @unless ($option['is_abstention'])
-                                    <span class="text-neutral-500">· {{ number_format($option['share'], 1, ',', '.') }} %</span>
+                                    <span class="text-neutral-500">· {{ number_format($option['share'], 2, ',', '.') }} %</span>
                                 @endunless
                             </span>
                         </div>

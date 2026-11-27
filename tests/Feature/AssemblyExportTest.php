@@ -37,7 +37,7 @@ it('exportiert Anwesenheit und Ergebnisse als CSV', function () {
     expect($csv)->toStartWith("\xEF\xBB\xBF")
         ->toContain('"Fechtschule Nord";3;')
         ->toContain('Geheimer Antrag')
-        ->toContain('Dagegen;3;100,0')
+        ->toContain('Dagegen;3;100,00')
         ->toContain('Detailergebnis (öffentlich)')
         ->toContain('"Fechtschule Nord";3;"Offener Antrag";Dagegen');
 
